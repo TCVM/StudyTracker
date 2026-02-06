@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">Arquitectura y Organización de Computadoras</h1>
+                <p class="subtitle">Visualiza tu progreso de estudio en arquitectura de computadoras</p>
+                <div class="global-progress">
+                    <div class="progress-header">
+                        <span>Progreso Global</span>
+                        <span class="progress-percentage" id="globalPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="globalProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="categories-container" id="categoriesContainer"></div>
+        </main>
+
+        <footer class="footer">
+            <button class="btn btn-primary" id="saveBtn">Guardar Progreso</button>
+            <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>i
