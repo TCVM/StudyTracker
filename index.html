@@ -22,11 +22,109 @@
                         <div class="progress-fill" id="globalProgress" style="width: 0%"></div>
                     </div>
                 </div>
+
+                <section class="session-panel" aria-label="Sesión de enfoque">
+                    <div class="session-left">
+                        <div class="timer-display" id="timerDisplay">00:00:00</div>
+                        <div class="timer-meta">
+                            <div class="timer-pill" title="Racha de tiempo (en esta sesión)">
+                                Racha: <span id="streakDisplay">00:00</span>
+                            </div>
+                            <div class="timer-pill" title="Multiplicador actual">
+                                Mult: <span id="multiplierDisplay">x1.00</span>
+                            </div>
+                            <div class="timer-pill" title="Dificultad">
+                                <label class="difficulty-label" for="difficultySelect">Modo</label>
+                                <select id="difficultySelect" class="difficulty-select">
+                                    <option value="normal">Normal</option>
+                                    <option value="hardcore">Hardcore</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="timer-actions">
+                            <button class="btn btn-primary" id="timerToggleBtn">Iniciar</button>
+                            <button class="btn btn-secondary" id="timerStopBtn" disabled>Detener</button>
+                        </div>
+                    </div>
+
+                    <div class="session-right">
+                        <div class="avatar-wrap" aria-label="Indicador visual de racha">
+                            <div class="streak-avatar streak-tier-0" id="streakAvatar" role="img" aria-label="Racha visual"></div>
+                            <div class="avatar-caption" id="avatarCaption">En frío</div>
+                        </div>
+
+                        <div class="xp-panel" aria-label="Progresión">
+                            <div class="xp-header">
+                                <div class="xp-level">Nivel <span id="levelText">1</span></div>
+                                <div class="xp-total"><span id="xpText">0</span> XP</div>
+                            </div>
+                            <div class="xp-bar" aria-label="Progreso de nivel">
+                                <div class="xp-fill" id="xpFill" style="width: 0%"></div>
+                            </div>
+                            <div class="xp-sub">
+                                <span>SP: <span id="skillPointsText">0</span></span>
+                                <span id="focusTodayText">Hoy: 0m</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <nav class="view-tabs" aria-label="Vistas">
+                    <button class="tab-btn active" data-view="listView" type="button">Lista</button>
+                    <button class="tab-btn" data-view="mapView" type="button">Mapa</button>
+                    <button class="tab-btn" data-view="skillView" type="button">Árbol</button>
+                    <button class="tab-btn" data-view="statsView" type="button">Stats</button>
+                </nav>
             </div>
         </header>
 
         <main class="main-content">
-            <div class="categories-container" id="categoriesContainer"></div>
+            <section class="view view-active" id="listView">
+                <div class="categories-container" id="categoriesContainer"></div>
+            </section>
+
+            <section class="view" id="mapView" aria-label="Mapa de temas">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Mapa de Temas</h2>
+                        <div class="panel-subtitle">Limpia marcadores completando temas y repasos</div>
+                    </div>
+                    <div class="map-legend">
+                        <span class="legend-pill"><span class="dot dot-pending"></span>Pendiente</span>
+                        <span class="legend-pill"><span class="dot dot-due"></span>Repaso</span>
+                        <span class="legend-pill"><span class="dot dot-done"></span>Completado</span>
+                    </div>
+                    <div class="map-grid" id="mapContainer"></div>
+                </div>
+            </section>
+
+            <section class="view" id="skillView" aria-label="Árbol de habilidades">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Árbol de Habilidades</h2>
+                        <div class="panel-subtitle">Gasta SP al subir de nivel para mejorar tu progreso</div>
+                    </div>
+                    <div class="skills-grid" id="skillTreeContainer"></div>
+                </div>
+            </section>
+
+            <section class="view" id="statsView" aria-label="Estadísticas y logros">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Estadísticas</h2>
+                        <div class="panel-subtitle">Tiempo, consistencia y progreso</div>
+                    </div>
+                    <div class="stats-grid" id="statsContainer"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Logros</h2>
+                        <div class="panel-subtitle">Desbloquea por tiempo de enfoque y rachas</div>
+                    </div>
+                    <div class="achievements-grid" id="achievementsContainer"></div>
+                </div>
+            </section>
         </main>
 
         <footer class="footer">
@@ -37,4 +135,4 @@
 
     <script src="app.js"></script>
 </body>
-</html>i
+</html>
