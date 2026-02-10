@@ -26,12 +26,44 @@ const DIFFICULTY_CONFIG = {
 };
 
 const ACHIEVEMENTS = [
+    // Logros de Progreso Académico
+    { id: 'progress_first_topic', title: 'Primeros pasos', desc: 'Completar el primer tema', kind: 'progress', condition: 'first_topic' },
+    { id: 'progress_25_percent', title: 'Cuarto de camino', desc: 'Completar el 25% del contenido', kind: 'progress', condition: '25_percent' },
+    { id: 'progress_50_percent', title: 'Mitad del camino', desc: 'Completar el 50% del contenido', kind: 'progress', condition: '50_percent' },
+    { id: 'progress_75_percent', title: 'Casi ahí', desc: 'Completar el 75% del contenido', kind: 'progress', condition: '75_percent' },
+    { id: 'progress_100_percent', title: 'Maestro', desc: 'Completar el 100% del contenido', kind: 'progress', condition: '100_percent' },
+    
+    // Logros de Tiempo
+    { id: 'time_early_bird', title: 'Madrugador', desc: 'Estudiar antes de las 8 AM', kind: 'time', condition: 'before_8am' },
+    { id: 'time_night_owl', title: 'Búho nocturno', desc: 'Estudiar después de las 10 PM', kind: 'time', condition: 'after_10pm' },
+    { id: 'time_consistent', title: 'Consistente', desc: 'Estudiar 3 días consecutivos', kind: 'time', condition: '3_days_streak' },
+    { id: 'time_week', title: 'Semana completa', desc: 'Estudiar 7 días seguidos', kind: 'time', condition: '7_days_streak' },
+    { id: 'time_month', title: 'Mes de estudio', desc: 'Estudiar en 20+ días del mes', kind: 'time', condition: '20_days_month' },
+    
+    // Logros de Rachas
+    { id: 'streak_10min', title: 'Calentando motores', desc: '10 minutos de racha seguidos', kind: 'streak', seconds: 10 * 60 },
+    { id: 'streak_30min', title: 'En zona', desc: '30 minutos de racha seguidos', kind: 'streak', seconds: 30 * 60 },
+    { id: 'streak_60min', title: 'Inquebrantable', desc: '60 minutos de racha seguidos', kind: 'streak', seconds: 60 * 60 },
+    { id: 'streak_2h', title: 'Maratón de estudio', desc: '2 horas sin pausas', kind: 'streak', seconds: 2 * 60 * 60 },
+    
+    // Logros de Temas
+    { id: 'topic_architecture', title: 'Arquitecto', desc: 'Completar "Estructura del Computador"', kind: 'topic', condition: 'complete_architecture' },
+    { id: 'topic_memory', title: 'Memorista', desc: 'Completar "Jerarquía de Memoria"', kind: 'topic', condition: 'complete_memory' },
+    { id: 'topic_instructions', title: 'Programador', desc: 'Completar "Repertorio de Instrucciones"', kind: 'topic', condition: 'complete_instructions' },
+    
+    // Logros Especiales
+    { id: 'special_first_xp', title: 'Primer XP', desc: 'Ganar los primeros 10 XP', kind: 'special', condition: 'first_10_xp' },
+    { id: 'special_collector', title: 'Coleccionista', desc: 'Desbloquear 5 logros', kind: 'special', condition: '5_achievements' },
+    { id: 'special_hunter', title: 'Cazador de logros', desc: 'Desbloquear 15 logros', kind: 'special', condition: '15_achievements' },
+    { id: 'special_dedicated', title: 'Dedicado', desc: '10 sesiones de estudio', kind: 'special', condition: '10_sessions' },
+    { id: 'special_veteran', title: 'Veterano', desc: '50 sesiones de estudio', kind: 'special', condition: '50_sessions' },
+    
+    // Logros originales
     { id: 'focus_total_10m', title: 'Arranque', desc: '10 minutos de enfoque total', kind: 'total', seconds: 10 * 60 },
     { id: 'focus_total_30m', title: 'Ritmo', desc: '30 minutos de enfoque total', kind: 'total', seconds: 30 * 60 },
     { id: 'focus_total_60m', title: 'Una hora', desc: '60 minutos de enfoque total', kind: 'total', seconds: 60 * 60 },
     { id: 'focus_total_3h', title: 'En serio', desc: '3 horas de enfoque total', kind: 'total', seconds: 3 * 60 * 60 },
     { id: 'focus_total_10h', title: 'Modo máquina', desc: '10 horas de enfoque total', kind: 'total', seconds: 10 * 60 * 60 },
-    { id: 'focus_streak_10m', title: 'Calentando', desc: '10 minutos de racha en una sesión', kind: 'streak', seconds: 10 * 60 },
     { id: 'focus_streak_25m', title: 'Pomodoro pro', desc: '25 minutos de racha en una sesión', kind: 'streak', seconds: 25 * 60 },
     { id: 'focus_streak_45m', title: 'En llamas', desc: '45 minutos de racha en una sesión', kind: 'streak', seconds: 45 * 60 }
 ];
@@ -191,6 +223,9 @@ const mapContainer = document.getElementById('mapContainer');
 const skillTreeContainer = document.getElementById('skillTreeContainer');
 const statsContainer = document.getElementById('statsContainer');
 const achievementsContainer = document.getElementById('achievementsContainer');
+const sessionsContainer = document.getElementById('sessionsContainer');
+
+const MAX_SESSIONS_DISPLAY = 20;
 
 function createDefaultState() {
     return {
@@ -207,13 +242,15 @@ function createDefaultState() {
             sessionsCount: 0,
             longestSessionSeconds: 0,
             dailyFocusSeconds: {},
+            sessions: [],
             timer: {
                 running: false,
                 sessionSeconds: 0,
                 streakSeconds: 0,
                 xpCarrySeconds: 0,
                 lastTickMs: null,
-                pausedAtMs: null
+                pausedAtMs: null,
+                currentSessionStartMs: null
             }
         }
     };
@@ -448,12 +485,152 @@ function unlockAchievement(achievementId) {
 function checkAchievements() {
     const total = appState.meta.totalFocusSeconds;
     const streak = appState.meta.timer.streakSeconds;
-
+    
+    // Obtener estadísticas para verificar logros
+    let totalTopics = 0;
+    let completedTopics = 0;
+    for (const category of appState.categories) {
+        totalTopics += category.topics.length;
+        completedTopics += category.topics.filter(t => t.completed).length;
+    }
+    const completionPercentage = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+    
+    const unlockedAchievementsCount = Object.keys(appState.meta.achievements).length;
+    const sessionsCount = appState.meta.sessionsCount;
+    const totalXp = appState.meta.xp;
+    
+    // Verificar logros por cada tipo
     for (const a of ACHIEVEMENTS) {
         if (appState.meta.achievements[a.id]) continue;
-        if (a.kind === 'total' && total >= a.seconds) unlockAchievement(a.id);
-        if (a.kind === 'streak' && streak >= a.seconds) unlockAchievement(a.id);
+        
+        // Logros originales (total y streak)
+        if (a.kind === 'total' && total >= a.seconds) {
+            unlockAchievement(a.id);
+            continue;
+        }
+        if (a.kind === 'streak' && streak >= a.seconds) {
+            unlockAchievement(a.id);
+            continue;
+        }
+        
+        // Logros de Progreso Académico
+        if (a.kind === 'progress') {
+            if (a.condition === 'first_topic' && completedTopics >= 1) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '25_percent' && completionPercentage >= 25) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '50_percent' && completionPercentage >= 50) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '75_percent' && completionPercentage >= 75) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '100_percent' && completionPercentage >= 100) {
+                unlockAchievement(a.id);
+            }
+            continue;
+        }
+        
+        // Logros de Temas específicos
+        if (a.kind === 'topic') {
+            let categoryCompleted = false;
+            if (a.condition === 'complete_architecture') {
+                const architectureCategory = appState.categories.find(c => c.name.includes('Estructura del Computador'));
+                categoryCompleted = architectureCategory && architectureCategory.topics.every(t => t.completed);
+            } else if (a.condition === 'complete_memory') {
+                const memoryCategory = appState.categories.find(c => c.name.includes('Jerarquía de Memoria'));
+                categoryCompleted = memoryCategory && memoryCategory.topics.every(t => t.completed);
+            } else if (a.condition === 'complete_instructions') {
+                const instructionsCategory = appState.categories.find(c => c.name.includes('Repertorio de Instrucciones'));
+                categoryCompleted = instructionsCategory && instructionsCategory.topics.every(t => t.completed);
+            }
+            
+            if (categoryCompleted) {
+                unlockAchievement(a.id);
+            }
+            continue;
+        }
+        
+        // Logros Especiales
+        if (a.kind === 'special') {
+            if (a.condition === 'first_10_xp' && totalXp >= 10) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '5_achievements' && unlockedAchievementsCount >= 5) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '15_achievements' && unlockedAchievementsCount >= 15) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '10_sessions' && sessionsCount >= 10) {
+                unlockAchievement(a.id);
+            } else if (a.condition === '50_sessions' && sessionsCount >= 50) {
+                unlockAchievement(a.id);
+            }
+            continue;
+        }
+        
+        // Logros de Tiempo (horario y consistencia)
+        if (a.kind === 'time') {
+            const now = new Date();
+            const currentHour = now.getHours();
+            
+            // Logros de horario (se verifican solo si el timer está corriendo)
+            if (appState.meta.timer.running) {
+                if (a.condition === 'before_8am' && currentHour < 8) {
+                    unlockAchievement(a.id);
+                } else if (a.condition === 'after_10pm' && currentHour >= 22) {
+                    unlockAchievement(a.id);
+                }
+            }
+            
+            // Logros de consistencia (días consecutivos)
+            if (a.condition === '3_days_streak' || a.condition === '7_days_streak' || a.condition === '20_days_month') {
+                const activeDays = new Set();
+                const today = todayKey();
+                const todayDate = new Date(today);
+                
+                // Obtener días con actividad
+                for (const dateKey in appState.meta.dailyFocusSeconds) {
+                    if (appState.meta.dailyFocusSeconds[dateKey] > 0) {
+                        activeDays.add(dateKey);
+                    }
+                }
+                
+                // Verificar 20+ días en el mes actual
+                if (a.condition === '20_days_month') {
+                    const currentMonth = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
+                    const daysInMonth = Array.from(activeDays).filter(dateKey => dateKey.startsWith(currentMonth)).length;
+                    if (daysInMonth >= 20) {
+                        unlockAchievement(a.id);
+                    }
+                }
+                
+                // Verificar días consecutivos
+                if (a.condition === '3_days_streak' || a.condition === '7_days_streak') {
+                    const targetStreak = a.condition === '3_days_streak' ? 3 : 7;
+                    let consecutiveDays = 0;
+                    const checkDate = new Date(todayDate);
+                    
+                    for (let i = 0; i < targetStreak; i++) {
+                        const checkKey = formatDateKey(checkDate);
+                        if (activeDays.has(checkKey)) {
+                            consecutiveDays++;
+                        } else {
+                            break;
+                        }
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    }
+                    
+                    if (consecutiveDays >= targetStreak) {
+                        unlockAchievement(a.id);
+                    }
+                }
+            }
+        }
     }
+}
+
+function formatDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 function ensureReviews(topic) {
@@ -801,6 +978,11 @@ function startTimer() {
     t.lastTickMs = now;
     t.pausedAtMs = null;
 
+    // Record session start time if not resuming
+    if (!t.currentSessionStartMs) {
+        t.currentSessionStartMs = now;
+    }
+
     appState.meta.sessionsCount += 1;
     saveData();
 
@@ -831,11 +1013,19 @@ function stopTimer() {
         appState.meta.longestSessionSeconds = t.sessionSeconds;
     }
 
+    // Record the session if it has duration
+    if (t.sessionSeconds > 0 && t.currentSessionStartMs) {
+        const xpEarned = Math.floor(t.sessionSeconds / 60) * getDifficulty().xpPerMinute * getMultiplier();
+        recordSession(t.currentSessionStartMs, t.sessionSeconds, xpEarned);
+    }
+
     t.sessionSeconds = 0;
     t.streakSeconds = 0;
     t.xpCarrySeconds = 0;
+    t.currentSessionStartMs = null;
 
     updateTimerUi();
+    renderSessions();
     saveData(true);
 }
 
@@ -893,6 +1083,60 @@ function setActiveView(viewId) {
     });
 }
 
+// Session tracking functions
+function formatDateTime(timestamp) {
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+function recordSession(startTime, durationSeconds, xpEarned) {
+    const session = {
+        startTime: startTime,
+        endTime: Date.now(),
+        durationSeconds: durationSeconds,
+        xpEarned: xpEarned,
+        difficulty: appState.meta.difficulty
+    };
+    
+    appState.meta.sessions.unshift(session);
+    
+    if (appState.meta.sessions.length > MAX_SESSIONS_DISPLAY) {
+        appState.meta.sessions = appState.meta.sessions.slice(0, MAX_SESSIONS_DISPLAY);
+    }
+    
+    saveData(true);
+}
+
+function renderSessions() {
+    if (!sessionsContainer) return;
+    
+    const sessions = appState.meta.sessions;
+    
+    if (sessions.length === 0) {
+        sessionsContainer.innerHTML = '<div class="sessions-empty">No hay sesiones registradas</div>';
+        return;
+    }
+    
+    sessionsContainer.innerHTML = sessions.map((session, index) => `
+        <div class="session-item">
+            <div class="session-icon">⏱️</div>
+            <div class="session-info">
+                <div class="session-date">Sesión ${appState.meta.sessionsCount - index}</div>
+                <div class="session-time">${formatDateTime(session.startTime)}</div>
+            </div>
+            <div class="session-stats">
+                <div class="session-duration">${formatHMS(session.durationSeconds)}</div>
+                <div class="session-xp">+${Math.floor(session.xpEarned)} XP</div>
+            </div>
+        </div>
+    `).join('');
+}
+
 function renderAllNonTimer() {
     renderCategories();
     updateGlobalProgress();
@@ -900,6 +1144,7 @@ function renderAllNonTimer() {
     renderSkillTree();
     renderStats();
     renderAchievements();
+    renderSessions();
 }
 
 function renderAll() {
