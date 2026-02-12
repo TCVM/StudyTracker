@@ -1184,6 +1184,97 @@ function renderHomeAchievementsV2() {
     renderAchievementsGridV2(listEl, { includeSubjectGroups: true });
 }
 
+function ensureHomeStatsPanelV2() {
+    const homeView = document.getElementById('homeView');
+    if (!homeView) return;
+
+    const panelId = 'homeStatsPanel';
+    let panel = document.getElementById(panelId);
+
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.className = 'panel';
+        panel.id = panelId;
+        panel.innerHTML = `
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Estadísticas Globales</h2>
+                    <div class="panel-subtitle">Resumen total y por materia</div>
+                </div>
+                <button class="btn btn-secondary btn-small" id="homeStatsToggleBtn" type="button">Mostrar</button>
+            </div>
+            <div class="stats-grid" id="homeStatsSummary"></div>
+            <div class="stats-grid" id="homeStatsDetails" hidden></div>
+        `;
+
+        const insertBeforeEl = document.getElementById('homeAchievementsPanel') ?? (document.getElementById('recentSubjectsGrid')?.closest('.recent-subjects') ?? null);
+        if (insertBeforeEl && insertBeforeEl.parentNode) {
+            insertBeforeEl.parentNode.insertBefore(panel, insertBeforeEl);
+        } else {
+            homeView.querySelector('.home-container')?.appendChild(panel);
+        }
+    }
+
+    const toggleBtn = document.getElementById('homeStatsToggleBtn');
+    const detailsEl = document.getElementById('homeStatsDetails');
+    if (toggleBtn && detailsEl && !toggleBtn.dataset.bound) {
+        toggleBtn.dataset.bound = '1';
+        toggleBtn.addEventListener('click', () => {
+            detailsEl.hidden = !detailsEl.hidden;
+            toggleBtn.textContent = detailsEl.hidden ? 'Mostrar' : 'Ocultar';
+        });
+    }
+}
+
+function renderHomeStatsV2() {
+    const summaryEl = document.getElementById('homeStatsSummary');
+    const detailsEl = document.getElementById('homeStatsDetails');
+    if (!summaryEl || !detailsEl) return;
+
+    if (!appState) {
+        summaryEl.innerHTML = '';
+        detailsEl.innerHTML = '';
+        return;
+    }
+
+    const totalFocus = appState.globalMeta.totalFocusSeconds ?? 0;
+    const totalSessions = appState.globalMeta.sessionsCount ?? 0;
+    const longest = appState.globalMeta.longestSessionSeconds ?? 0;
+    const globalProgress = calculateGlobalProgress();
+
+    summaryEl.innerHTML = `
+        <div class="card">
+            <div class="card-title">Tiempo total</div>
+            <div class="card-desc">${escapeHtml(prettyTime(totalFocus))}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Sesiones</div>
+            <div class="card-desc">${escapeHtml(String(totalSessions))}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Mejor sesión</div>
+            <div class="card-desc">${escapeHtml(prettyTime(longest))}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Progreso global</div>
+            <div class="card-desc">${escapeHtml(String(globalProgress))}%</div>
+        </div>
+    `;
+
+    const subjects = [...(appState.subjects ?? [])].sort((a, b) => calculateSubjectProgress(b) - calculateSubjectProgress(a));
+    detailsEl.innerHTML = subjects.map(subject => {
+        const progress = calculateSubjectProgress(subject);
+        const time = prettyTime(subject.meta?.totalFocusSeconds ?? 0);
+        const sessions = String(subject.meta?.sessionsCount ?? 0);
+        return `
+            <div class="card">
+                <div class="card-title">${escapeHtml(subject.icon ? `${subject.icon} ` : '')}${escapeHtml(subject.name ?? 'Materia')}</div>
+                <div class="card-desc">Progreso: ${escapeHtml(String(progress))}% · Tiempo: ${escapeHtml(time)} · Sesiones: ${escapeHtml(sessions)}</div>
+            </div>
+        `;
+    }).join('');
+}
+
 function checkAchievements() {
     if (!currentSubject) return;
 
@@ -1687,6 +1778,8 @@ function renderHomePage() {
     
     ensureHomeAchievementsPanelV2();
     renderHomeAchievementsV2();
+    ensureHomeStatsPanelV2();
+    renderHomeStatsV2();
     renderRecentSubjects();
 }
 
@@ -1773,17 +1866,32 @@ function setupEventListeners() {
 
     quickAddSubject.addEventListener('click', showAddSubjectModal);
     quickStartSession.addEventListener('click', () => {
-        if (currentSubject) {
-            startOrPauseTimer();
-        } else {
-            showNotification('Selecciona una materia primero');
+        if (!currentSubject) {
+            const subjects = appState.subjects ?? [];
+            if (subjects.length === 0) {
+                showNotification('Crea una materia primero');
+                return;
+            }
+
+            const mostRecent = [...subjects].sort((a, b) => getSubjectLastActivity(b) - getSubjectLastActivity(a))[0] ?? subjects[0];
+            selectSubject(mostRecent.id);
         }
+
+        startOrPauseTimer();
     });
     quickViewStats.addEventListener('click', () => {
-        if (currentSubject) {
-            setActiveView('statsView');
-        } else {
-            showNotification('Selecciona una materia primero');
+        ensureHomeStatsPanelV2();
+        renderHomeStatsV2();
+
+        const detailsEl = document.getElementById('homeStatsDetails');
+        const toggleBtn = document.getElementById('homeStatsToggleBtn');
+        if (detailsEl) detailsEl.hidden = false;
+        if (toggleBtn) toggleBtn.textContent = 'Ocultar';
+
+        try {
+            document.getElementById('homeStatsPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch {
+            // ignore
         }
     });
 
