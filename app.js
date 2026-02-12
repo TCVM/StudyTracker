@@ -279,7 +279,6 @@ const themeToggleBtn = document.getElementById('themeToggleBtn');
 const categoriesContainer = document.getElementById('categoriesContainer');
 const subjectPercentage = document.getElementById('subjectPercentage');
 const subjectProgress = document.getElementById('subjectProgress');
-const saveBtn = document.getElementById('saveBtn');
 const resetBtn = document.getElementById('resetBtn');
 
 const timerDisplay = document.getElementById('timerDisplay');
@@ -314,9 +313,55 @@ const subjectNameInput = document.getElementById('subjectName');
 const subjectIconInput = document.getElementById('subjectIcon');
 const subjectColorInput = document.getElementById('subjectColor');
 const subjectTitle = document.getElementById('subjectTitle');
+
+const addSubjectTabManual = document.getElementById('addSubjectTabManual');
+const addSubjectTabImport = document.getElementById('addSubjectTabImport');
+const addSubjectManualSection = document.getElementById('addSubjectManualSection');
+const addSubjectImportSection = document.getElementById('addSubjectImportSection');
+const addCategoryBtn = document.getElementById('addCategoryBtn');
+const subjectCategoriesBuilder = document.getElementById('subjectCategoriesBuilder');
+const subjectImportFile = document.getElementById('subjectImportFile');
+const subjectImportStatus = document.getElementById('subjectImportStatus');
+
+const confirmModal = document.getElementById('confirmModal');
+const confirmModalTitle = document.getElementById('confirmModalTitle');
+const confirmModalText = document.getElementById('confirmModalText');
+const confirmModalCloseBtn = document.getElementById('confirmModalCloseBtn');
+const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+const confirmModalConfirmBtn = document.getElementById('confirmModalConfirmBtn');
 const subjectSubtitle = document.getElementById('subjectSubtitle');
 const editSubjectBtn = document.getElementById('editSubjectBtn');
 const deleteSubjectBtn = document.getElementById('deleteSubjectBtn');
+
+const editSubjectModal = document.getElementById('editSubjectModal');
+const closeEditSubjectModalBtn = document.getElementById('closeEditSubjectModalBtn');
+const cancelEditSubjectModalBtn = document.getElementById('cancelEditSubjectModalBtn');
+const confirmEditSubjectModalBtn = document.getElementById('confirmEditSubjectModalBtn');
+const editSubjectTabDetails = document.getElementById('editSubjectTabDetails');
+const editSubjectTabStructure = document.getElementById('editSubjectTabStructure');
+const editSubjectTabAchievements = document.getElementById('editSubjectTabAchievements');
+const editSubjectTabReset = document.getElementById('editSubjectTabReset');
+const editSubjectDetailsSection = document.getElementById('editSubjectDetailsSection');
+const editSubjectStructureSection = document.getElementById('editSubjectStructureSection');
+const editSubjectAchievementsSection = document.getElementById('editSubjectAchievementsSection');
+const editSubjectResetSection = document.getElementById('editSubjectResetSection');
+const editSubjectNameInput = document.getElementById('editSubjectName');
+const editSubjectIconInput = document.getElementById('editSubjectIcon');
+const editSubjectColorInput = document.getElementById('editSubjectColor');
+const editAddCategoryBtn = document.getElementById('editAddCategoryBtn');
+const editSubjectCategoriesBuilder = document.getElementById('editSubjectCategoriesBuilder');
+const resetSubjectBtn = document.getElementById('resetSubjectBtn');
+
+const customAchievementsList = document.getElementById('customAchievementsList');
+const customAchTitle = document.getElementById('customAchTitle');
+const customAchDesc = document.getElementById('customAchDesc');
+const customAchType = document.getElementById('customAchType');
+const customAchValueRow = document.getElementById('customAchValueRow');
+const customAchValue = document.getElementById('customAchValue');
+const customAchCategoryRow = document.getElementById('customAchCategoryRow');
+const customAchCategory = document.getElementById('customAchCategory');
+const addCustomAchievementBtn = document.getElementById('addCustomAchievementBtn');
+const customAchStatus = document.getElementById('customAchStatus');
 
 const totalSubjectsEl = document.getElementById('totalSubjects');
 const totalTimeEl = document.getElementById('totalTime');
@@ -326,8 +371,82 @@ const recentSubjectsGrid = document.getElementById('recentSubjectsGrid');
 const quickAddSubject = document.getElementById('quickAddSubject');
 const quickStartSession = document.getElementById('quickStartSession');
 const quickViewStats = document.getElementById('quickViewStats');
+const quickResetAll = document.getElementById('quickResetAll');
 
 const MAX_SESSIONS_DISPLAY = 20;
+
+let addSubjectDraft = null;
+let pendingConfirmResolve = null;
+let editSubjectDraft = null;
+let editingSubjectId = null;
+
+function showConfirmModalV2(options = null) {
+    if (!confirmModal || !confirmModalConfirmBtn || !confirmModalCancelBtn || !confirmModalCloseBtn) {
+        return Promise.resolve(confirm(options?.fallbackText ?? '¿Confirmar?'));
+    }
+
+    // If another confirm is open, resolve it as cancelled to avoid stacking handlers.
+    if (pendingConfirmResolve) {
+        try {
+            pendingConfirmResolve(false);
+        } catch {
+            // ignore
+        }
+        pendingConfirmResolve = null;
+        confirmModal.classList.remove('active');
+    }
+
+    const title = options?.title ?? 'Confirmar';
+    const text = options?.text ?? '¿Estás seguro?';
+    const confirmText = options?.confirmText ?? 'Confirmar';
+    const cancelText = options?.cancelText ?? 'Cancelar';
+
+    if (confirmModalTitle) confirmModalTitle.textContent = title;
+    if (confirmModalText) confirmModalText.textContent = text;
+    confirmModalConfirmBtn.textContent = confirmText;
+    confirmModalCancelBtn.textContent = cancelText;
+
+    confirmModal.classList.add('active');
+
+    return new Promise((resolve) => {
+        pendingConfirmResolve = resolve;
+
+        const cleanup = (value) => {
+            confirmModalCancelBtn.removeEventListener('click', onCancel);
+            confirmModalConfirmBtn.removeEventListener('click', onConfirm);
+            confirmModalCloseBtn.removeEventListener('click', onClose);
+            confirmModal.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onKeydown);
+
+            if (!pendingConfirmResolve) return;
+            pendingConfirmResolve = null;
+            confirmModal.classList.remove('active');
+            resolve(value);
+        };
+
+        const onCancel = () => cleanup(false);
+        const onConfirm = () => cleanup(true);
+        const onClose = () => cleanup(false);
+        const onBackdrop = (e) => {
+            if (e.target === confirmModal) cleanup(false);
+        };
+        const onKeydown = (e) => {
+            if (e.key === 'Escape') cleanup(false);
+        };
+
+        confirmModalCancelBtn.addEventListener('click', onCancel);
+        confirmModalConfirmBtn.addEventListener('click', onConfirm);
+        confirmModalCloseBtn.addEventListener('click', onClose);
+        confirmModal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKeydown);
+
+        try {
+            confirmModalConfirmBtn.focus();
+        } catch {
+            // ignore
+        }
+    });
+}
 
 function createDefaultState() {
     return {
@@ -517,8 +636,15 @@ function saveData(force = false) {
     }
 }
 
-function resetData() {
-    if (!confirm('¿Reiniciar todo? (temas, XP, logros, stats y rachas)')) return;
+async function resetData() {
+    const ok = await showConfirmModalV2({
+        title: '🧨 Reiniciar TODO',
+        text: 'Esto borra TODAS las materias, temas/subtemas, sesiones, XP y logros. No se puede deshacer.',
+        confirmText: 'Sí, reiniciar todo',
+        cancelText: 'Cancelar',
+        fallbackText: '¿Reiniciar TODO?'
+    });
+    if (!ok) return;
     appState = createDefaultState();
     appState.subjects.push(createSubjectFromInitialData());
     saveData(true);
@@ -830,6 +956,92 @@ function unlockAchievementV2(achievementId, options = null) {
     return true;
 }
 
+function unlockSubjectAchievementV2(subject, achievementId, options = null) {
+    if (!subject) return false;
+    if (!subject.meta) subject.meta = {};
+    if (!subject.meta.achievements) subject.meta.achievements = {};
+    if (subject.meta.achievements[achievementId]) return false;
+
+    subject.meta.achievements[achievementId] = Date.now();
+
+    if (!options?.silent) {
+        const defs = subjectAchievementDefinitionsV2(subject);
+        const a = defs.find(x => x.id === achievementId);
+        if (a) showNotification(`🏆 Logro (${subject.name ?? 'Materia'}): ${a.title}`);
+    }
+
+    renderAchievementsV2();
+    renderHomePage();
+    saveData(true);
+    return true;
+}
+
+function subjectTopicStatsV2(subject) {
+    let total = 0;
+    let done = 0;
+
+    for (const category of subject?.categories ?? []) {
+        if (!category || !Array.isArray(category.topics)) continue;
+        total += category.topics.length;
+        done += category.topics.filter(t => t.completed).length;
+    }
+
+    const pct = total > 0 ? (done / total) * 100 : 0;
+    return { total, done, pct };
+}
+
+function checkSubjectAchievementsV2(subject, context = null) {
+    if (!subject) return;
+    const silent = !!context?.silent;
+
+    const defs = subjectAchievementDefinitionsV2(subject);
+    if (defs.length === 0) return;
+
+    const { done, pct } = subjectTopicStatsV2(subject);
+    const focusMinutes = Math.floor((subject?.meta?.totalFocusSeconds ?? 0) / 60);
+
+    for (const a of defs) {
+        if (subject?.meta?.achievements?.[a.id]) continue;
+
+        if (a.kind === 'progress') {
+            if (a.condition === 'first_topic' && done >= 1) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.condition === '25_percent' && pct >= 25) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.condition === '50_percent' && pct >= 50) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.condition === '75_percent' && pct >= 75) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.condition === '100_percent' && pct >= 100) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            }
+            continue;
+        }
+
+        if (a.kind === 'category') {
+            const category = subject.categories?.find(c => c.id === a.categoryId);
+            if (category && Array.isArray(category.topics) && category.topics.length > 0 && category.topics.every(t => t.completed)) {
+                unlockSubjectAchievementV2(subject, a.id, { silent });
+            }
+        }
+
+        if (a.kind === 'custom') {
+            if (a.type === 'pct') {
+                const threshold = Number(a.value);
+                if (Number.isFinite(threshold) && pct >= threshold) unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.type === 'focus_minutes') {
+                const threshold = Number(a.value);
+                if (Number.isFinite(threshold) && focusMinutes >= threshold) unlockSubjectAchievementV2(subject, a.id, { silent });
+            } else if (a.type === 'category_complete') {
+                const category = subject.categories?.find(c => c.id === a.categoryId);
+                if (category && Array.isArray(category.topics) && category.topics.length > 0 && category.topics.every(t => t.completed)) {
+                    unlockSubjectAchievementV2(subject, a.id, { silent });
+                }
+            }
+        }
+    }
+}
+
 function checkAchievementsV2(context = null) {
     if (!appState) return;
 
@@ -905,24 +1117,7 @@ function checkAchievementsV2(context = null) {
         }
 
         if (a.kind === 'topic') {
-            const categoryIdByCondition = {
-                complete_architecture: 1,
-                complete_memory: 2,
-                complete_instructions: 3,
-                complete_io_buses: 4,
-                complete_pipeline: 5,
-                complete_multiproc: 6
-            };
-            const categoryId = categoryIdByCondition[a.condition] ?? null;
-            if (!categoryId) continue;
-
-            for (const subject of appState.subjects) {
-                const category = subject.categories.find(c => c.id === categoryId);
-                if (category && category.topics.every(t => t.completed)) {
-                    unlockAchievementV2(a.id, { silent });
-                    break;
-                }
-            }
+            // Logros "topic" legacy (para datos iniciales) fueron reemplazados por logros dinámicos por materia.
             continue;
         }
 
@@ -940,6 +1135,12 @@ function checkAchievementsV2(context = null) {
             }
             continue;
         }
+    }
+
+    // Logros dinámicos por materia (se guardan dentro de cada materia; al eliminar la materia desaparecen).
+    const targets = (activity === 'generic' || silent) ? (appState.subjects ?? []) : (currentSubject ? [currentSubject] : []);
+    for (const s of targets) {
+        checkSubjectAchievementsV2(s, { silent });
     }
 }
 
@@ -980,6 +1181,70 @@ function renderAchievementGroupTitleV2(container, text) {
     container.appendChild(title);
 }
 
+function ensureAchievementUiStateV2() {
+    if (!appState) return {};
+    if (!appState.globalMeta) appState.globalMeta = {};
+    if (!appState.globalMeta.ui) appState.globalMeta.ui = {};
+    if (!appState.globalMeta.ui.achievementGroups) appState.globalMeta.ui.achievementGroups = {};
+    return appState.globalMeta.ui.achievementGroups;
+}
+
+function isAchievementGroupCollapsedV2(key, defaultCollapsed = false) {
+    const store = ensureAchievementUiStateV2();
+    if (!key) return !!defaultCollapsed;
+    if (typeof store[key] !== 'boolean') store[key] = !!defaultCollapsed;
+    return !!store[key];
+}
+
+function setAchievementGroupCollapsedV2(key, collapsed) {
+    if (!key) return;
+    const store = ensureAchievementUiStateV2();
+    store[key] = !!collapsed;
+}
+
+function renderAchievementCollapsibleGroupV2(parentGrid, label, options = null) {
+    const key = options?.key ?? null;
+    const defaultCollapsed = !!options?.defaultCollapsed;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'achievement-group';
+
+    const collapsed = isAchievementGroupCollapsedV2(key, defaultCollapsed);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'achievement-group-toggle section-title';
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'achievement-group-label';
+    labelSpan.textContent = label;
+
+    const chev = document.createElement('span');
+    chev.className = 'achievement-group-chevron';
+    chev.textContent = collapsed ? '▸' : '▾';
+
+    btn.appendChild(labelSpan);
+    btn.appendChild(chev);
+
+    const content = document.createElement('div');
+    content.className = 'achievement-group-content achievements-grid';
+    content.hidden = collapsed;
+
+    btn.addEventListener('click', () => {
+        content.hidden = !content.hidden;
+        const isCollapsed = content.hidden;
+        chev.textContent = isCollapsed ? '▸' : '▾';
+        btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+        setAchievementGroupCollapsedV2(key, isCollapsed);
+    });
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(content);
+    parentGrid.appendChild(wrapper);
+    return content;
+}
+
 function renderAchievementCardV2(container, a, unlockedAt) {
     const unlocked = !!unlockedAt;
     const badge = unlocked ? '<span class="badge unlocked">Desbloqueado</span>' : '<span class="badge">Bloqueado</span>';
@@ -995,46 +1260,139 @@ function renderAchievementCardV2(container, a, unlockedAt) {
     container.appendChild(card);
 }
 
-function renderAchievementsGridV2(container, options = {}) {
-    if (!container) return;
-    container.innerHTML = '';
+function globalAchievementDefinitionsV2() {
+    return (Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS : []).filter(a => a.kind !== 'topic');
+}
 
+function subjectAchievementDefinitionsV2(subject) {
+    if (!subject) return [];
+    const subjectId = subject.id;
+    const subjectName = subject.name ?? 'Materia';
+    const subjectIcon = subject.icon ? `${subject.icon} ` : '';
+
+    const defs = [
+        { id: `subj_${subjectId}_first_topic`, title: `${subjectIcon}Primeros pasos`, desc: `Completá tu primer subtema en ${subjectName}`, kind: 'progress', condition: 'first_topic' },
+        { id: `subj_${subjectId}_pct_25`, title: `${subjectIcon}En marcha`, desc: `Alcanzá el 25% de progreso en ${subjectName}`, kind: 'progress', condition: '25_percent' },
+        { id: `subj_${subjectId}_pct_50`, title: `${subjectIcon}Mitad del camino`, desc: `Llegá al 50% de progreso en ${subjectName}`, kind: 'progress', condition: '50_percent' },
+        { id: `subj_${subjectId}_pct_75`, title: `${subjectIcon}Casi ahí`, desc: `Alcanzá el 75% de progreso en ${subjectName}`, kind: 'progress', condition: '75_percent' },
+        { id: `subj_${subjectId}_pct_100`, title: `${subjectIcon}Maestro`, desc: `Completá el 100% del contenido de ${subjectName}`, kind: 'progress', condition: '100_percent' }
+    ];
+
+    for (const category of subject.categories ?? []) {
+        if (!category || !Array.isArray(category.topics) || category.topics.length === 0) continue;
+        const catName = category.name ?? 'Tema';
+        const catIcon = category.icon ?? '📌';
+        defs.push({
+            id: `subj_${subjectId}_cat_${category.id}_complete`,
+            title: `${catIcon} Dominio: ${catName}`,
+            desc: `Completar todos los subtemas de "${catName}"`,
+            kind: 'category',
+            condition: 'category_complete',
+            categoryId: category.id
+        });
+    }
+
+    const custom = Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : [];
+    for (const a of custom) {
+        if (!a || !a.id) continue;
+        defs.push({
+            id: String(a.id),
+            title: String(a.title ?? 'Logro personalizado'),
+            desc: String(a.desc ?? ''),
+            kind: 'custom',
+            type: a.type,
+            value: a.value,
+            categoryId: a.categoryId
+        });
+    }
+
+    return defs;
+}
+
+function renderGlobalAchievementsGridV2(container) {
+    if (!container) return;
     const unlockedById = appState?.globalMeta?.achievements ?? {};
-    const allAchievements = Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS : [];
+    const allAchievements = globalAchievementDefinitionsV2();
+    const knownIds = new Set(allAchievements.map(a => a.id));
 
     const kinds = ['progress', 'total', 'streak', 'time', 'special'];
     for (const kind of kinds) {
         const list = allAchievements.filter(a => a.kind === kind);
         if (list.length === 0) continue;
-        renderAchievementGroupTitleV2(container, achievementV2GroupLabel(kind));
+        const group = renderAchievementCollapsibleGroupV2(container, achievementV2GroupLabel(kind), {
+            key: `global_${kind}`,
+            defaultCollapsed: false
+        });
         for (const a of list) {
-            renderAchievementCardV2(container, a, unlockedById[a.id]);
+            renderAchievementCardV2(group, a, unlockedById[a.id]);
         }
     }
 
-    const includeSubjectGroups = options.includeSubjectGroups ?? true;
-    if (!includeSubjectGroups) return;
+    const legacy = Object.entries(unlockedById)
+        .filter(([id]) => !knownIds.has(id))
+        .map(([id, ts]) => ({ id, ts }))
+        .sort((a, b) => b.ts - a.ts);
 
-    const topicAchievements = allAchievements.filter(a => a.kind === 'topic');
-    for (const subject of appState?.subjects ?? []) {
-        const list = topicAchievements.filter(a => isTopicAchievementForSubjectV2(a, subject));
-        if (list.length === 0) continue;
+    if (legacy.length) {
+        const group = renderAchievementCollapsibleGroupV2(container, 'Legacy (versiones anteriores)', {
+            key: 'global_legacy',
+            defaultCollapsed: true
+        });
 
-        renderAchievementGroupTitleV2(container, `Materia: ${subject.icon ? `${subject.icon} ` : ''}${subject.name ?? 'Materia'}`);
-        for (const a of list) {
-            renderAchievementCardV2(container, a, unlockedById[a.id]);
+        for (const x of legacy) {
+            renderAchievementCardV2(group, {
+                id: x.id,
+                title: `Legacy: ${x.id}`,
+                desc: 'Logro de una versión anterior (se conserva por historial).',
+                kind: 'legacy'
+            }, x.ts);
         }
+    }
+}
+
+function renderSubjectAchievementsGridV2(container, subject) {
+    if (!container) return;
+    if (!subject) return;
+
+    const unlockedById = subject?.meta?.achievements ?? {};
+    const defs = subjectAchievementDefinitionsV2(subject);
+
+    const progress = defs.filter(d => d.kind === 'progress');
+    const categories = defs.filter(d => d.kind === 'category');
+    const custom = defs.filter(d => d.kind === 'custom');
+
+    if (progress.length) {
+        const group = renderAchievementCollapsibleGroupV2(container, 'Progreso de esta materia', {
+            key: `subj_${subject.id}_group_progress`,
+            defaultCollapsed: false
+        });
+        for (const a of progress) renderAchievementCardV2(group, a, unlockedById[a.id]);
+    }
+
+    if (categories.length) {
+        const group = renderAchievementCollapsibleGroupV2(container, 'Temas completados', {
+            key: `subj_${subject.id}_group_categories`,
+            defaultCollapsed: true
+        });
+        for (const a of categories) renderAchievementCardV2(group, a, unlockedById[a.id]);
+    }
+
+    if (custom.length) {
+        const group = renderAchievementCollapsibleGroupV2(container, 'Personalizados', {
+            key: `subj_${subject.id}_group_custom`,
+            defaultCollapsed: true
+        });
+        for (const a of custom) renderAchievementCardV2(group, a, unlockedById[a.id]);
     }
 }
 
 function renderAchievementsV2() {
     if (!achievementsContainer) return;
-    if (!appState) {
-        achievementsContainer.innerHTML = '';
-        return;
-    }
+    achievementsContainer.innerHTML = '';
+    if (!appState || !currentSubject) return;
 
-    renderAchievementsGridV2(achievementsContainer, { includeSubjectGroups: true });
+    // En el Stats de una materia, solo mostramos logros de ESA materia.
+    renderSubjectAchievementsGridV2(achievementsContainer, currentSubject);
 }
 
 function ensureHomeAchievementsPanelV2() {
@@ -1137,33 +1495,46 @@ function renderHomeAchievementsV2() {
         return;
     }
 
-    const unlockedById = appState.globalMeta?.achievements ?? {};
-    const unlockedCount = Object.keys(unlockedById).length;
-    const totalCount = Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS.length : 0;
+    const unlockedGlobal = appState.globalMeta?.achievements ?? {};
+    const globalDefs = globalAchievementDefinitionsV2();
+    const unlockedGlobalCount = globalDefs.reduce((sum, a) => sum + (unlockedGlobal[a.id] ? 1 : 0), 0);
+    const totalGlobalCount = globalDefs.length;
 
-    const topicAchievements = ACHIEVEMENTS.filter(a => a.kind === 'topic');
-    const perSubject = (appState.subjects ?? [])
-        .map(subject => {
-            const applicable = topicAchievements.filter(a => isTopicAchievementForSubjectV2(a, subject));
-            const unlocked = applicable.filter(a => !!unlockedById[a.id]).length;
-            return { subject, total: applicable.length, unlocked };
-        })
-        .filter(x => x.total > 0);
+    const perSubject = (appState.subjects ?? []).map(subject => {
+        const defs = subjectAchievementDefinitionsV2(subject);
+        const unlockedById = subject?.meta?.achievements ?? {};
+        const unlocked = defs.filter(a => !!unlockedById[a.id]).length;
+        return { subject, total: defs.length, unlocked };
+    }).filter(x => x.total > 0);
 
-    const recent = Object.entries(unlockedById)
-        .map(([id, ts]) => ({ id, ts }))
+    const titleById = new Map();
+    for (const a of globalDefs) titleById.set(a.id, a.title);
+    for (const subject of appState.subjects ?? []) {
+        for (const a of subjectAchievementDefinitionsV2(subject)) {
+            titleById.set(a.id, `${subject.icon ? `${subject.icon} ` : ''}${subject.name ?? 'Materia'}: ${a.title}`);
+        }
+    }
+
+    const recentAll = [];
+    for (const [id, ts] of Object.entries(unlockedGlobal)) {
+        const title = titleById.get(id);
+        if (title) recentAll.push({ title, ts });
+    }
+    for (const subject of appState.subjects ?? []) {
+        for (const [id, ts] of Object.entries(subject?.meta?.achievements ?? {})) {
+            const title = titleById.get(id);
+            if (title) recentAll.push({ title, ts });
+        }
+    }
+
+    const recent = recentAll
         .sort((a, b) => b.ts - a.ts)
-        .slice(0, 3)
-        .map(x => {
-            const a = ACHIEVEMENTS.find(v => v.id === x.id);
-            return a ? { title: a.title, ts: x.ts } : null;
-        })
-        .filter(Boolean);
+        .slice(0, 3);
 
     summaryEl.innerHTML = `
         <div class="card">
-            <div class="card-title">Global</div>
-            <div class="card-desc">${unlockedCount} / ${totalCount} desbloqueados</div>
+            <div class="card-title">Generales</div>
+            <div class="card-desc">${unlockedGlobalCount} / ${totalGlobalCount} desbloqueados</div>
         </div>
         ${perSubject.map(x => `
             <div class="card">
@@ -1181,7 +1552,20 @@ function renderHomeAchievementsV2() {
         ` : ''}
     `;
 
-    renderAchievementsGridV2(listEl, { includeSubjectGroups: true });
+    listEl.innerHTML = '';
+    renderGlobalAchievementsGridV2(listEl);
+
+    for (const subject of appState.subjects ?? []) {
+        const defs = subjectAchievementDefinitionsV2(subject);
+        if (!defs.length) continue;
+
+        const subjectGroup = renderAchievementCollapsibleGroupV2(
+            listEl,
+            `Materia: ${subject.icon ? `${subject.icon} ` : ''}${subject.name ?? 'Materia'}`,
+            { key: `home_subj_${subject.id}`, defaultCollapsed: true }
+        );
+        renderSubjectAchievementsGridV2(subjectGroup, subject);
+    }
 }
 
 function ensureHomeStatsPanelV2() {
@@ -1710,19 +2094,863 @@ function selectSubject(subjectId) {
         subjectTitle.textContent = currentSubject.name;
         subjectSubtitle.textContent = 'Progreso de estudio';
         setActiveView('subjectView');
+        setActiveView('listView');
         renderAll();
     }
+}
+
+function setAddSubjectModalTab(tab) {
+    const isManual = tab === 'manual';
+
+    if (addSubjectTabManual) {
+        addSubjectTabManual.classList.toggle('active', isManual);
+        addSubjectTabManual.setAttribute('aria-selected', isManual ? 'true' : 'false');
+    }
+    if (addSubjectTabImport) {
+        addSubjectTabImport.classList.toggle('active', !isManual);
+        addSubjectTabImport.setAttribute('aria-selected', !isManual ? 'true' : 'false');
+    }
+
+    if (addSubjectManualSection) addSubjectManualSection.hidden = !isManual;
+    if (addSubjectImportSection) addSubjectImportSection.hidden = isManual;
+}
+
+function addSubjectDraftId() {
+    return Date.now() + Math.floor(Math.random() * 1000000);
+}
+
+function createDraftTopic(depth = 1) {
+    return {
+        id: addSubjectDraftId(),
+        name: '',
+        depth: Math.max(1, Math.min(20, depth)),
+        collapsed: false,
+        sourceIndex: null
+    };
+}
+
+function createDraftCategory() {
+    return {
+        id: addSubjectDraftId(),
+        name: '',
+        icon: '📌',
+        collapsed: false,
+        topics: [createDraftTopic(1)]
+    };
+}
+
+function ensureAddSubjectDraft() {
+    if (!addSubjectDraft) {
+        addSubjectDraft = { categories: [createDraftCategory()] };
+    }
+    if (!Array.isArray(addSubjectDraft.categories)) addSubjectDraft.categories = [];
+}
+
+function findDraftCategory(catId) {
+    ensureAddSubjectDraft();
+    return addSubjectDraft.categories.find(c => c.id === catId) || null;
+}
+
+function findTopicIndexById(cat, topicId) {
+    if (!cat || !Array.isArray(cat.topics)) return -1;
+    return cat.topics.findIndex(t => t.id === topicId);
+}
+
+function draftLastDescendantIndex(topics, index) {
+    if (!Array.isArray(topics) || index < 0 || index >= topics.length) return index;
+    const depth = topics[index].depth;
+    let i = index + 1;
+    while (i < topics.length && topics[i].depth > depth) i++;
+    return i - 1;
+}
+
+function renderAddSubjectBuilder() {
+    ensureAddSubjectDraft();
+    if (!subjectCategoriesBuilder) return;
+
+    const escAttr = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    if (addSubjectDraft.categories.length === 0) {
+        addSubjectDraft.categories.push(createDraftCategory());
+    }
+
+    subjectCategoriesBuilder.innerHTML = addSubjectDraft.categories.map((cat, catIndex) => {
+        const catChevron = cat.collapsed ? '▸' : '▾';
+
+        const topics = Array.isArray(cat.topics) ? cat.topics : [];
+        const htmlRows = [];
+        const collapsedStack = [];
+
+        for (let i = 0; i < topics.length; i++) {
+            const t = topics[i];
+            while (collapsedStack.length && t.depth <= collapsedStack[collapsedStack.length - 1]) {
+                collapsedStack.pop();
+            }
+
+            const hidden = collapsedStack.length > 0;
+            const hasChildren = i + 1 < topics.length && topics[i + 1].depth > t.depth;
+            const chevron = t.collapsed ? '▸' : '▾';
+            const inputIndent = (Math.max(1, t.depth) - 1) * 16;
+
+            const collapseBtn = hasChildren
+                ? `<button class="topic-collapse" type="button" data-action="topic_toggle" title="Desplegar / Cerrar">${chevron}</button>`
+                : `<button class="topic-collapse placeholder" type="button" disabled title="Sin subtemas">•</button>`;
+
+            htmlRows.push(`
+                <div class="topic-row ${hidden ? 'is-hidden' : ''}" data-topic-id="${t.id}">
+                    ${collapseBtn}
+                    <input class="topic-input" data-field="topic_name" type="text" placeholder="Subtema" value="${escAttr(t.name ?? '')}" style="margin-left:${inputIndent}px" />
+                    <button class="topic-action" type="button" data-action="topic_add_child" title="Agregar subtema">↳</button>
+                    <button class="topic-action" type="button" data-action="topic_add_sibling" title="Agregar al mismo nivel">+</button>
+                    <button class="topic-action" type="button" data-action="topic_delete" title="Eliminar">×</button>
+                </div>
+            `);
+
+            if (!hidden && hasChildren && t.collapsed) {
+                collapsedStack.push(t.depth);
+            }
+        }
+
+        const topicsHtml = htmlRows.join('') || '<div class="builder-subtitle">Agregá subtemas para este tema.</div>';
+
+        return `
+            <div class="category-editor" data-cat-id="${cat.id}">
+                <div class="category-editor-header">
+                    <button class="mini-btn" type="button" data-action="cat_toggle" title="Desplegar / Cerrar">${catChevron}</button>
+                    <input class="mini-input" data-field="cat_icon" type="text" placeholder="📌" value="${escAttr(cat.icon ?? '')}" />
+                    <input class="mini-input" data-field="cat_name" type="text" placeholder="Tema (ej: Álgebra)" value="${escAttr(cat.name ?? '')}" />
+                    <button class="mini-btn" type="button" data-action="cat_delete" title="Eliminar tema">×</button>
+                </div>
+                <div class="category-editor-body" ${cat.collapsed ? 'hidden' : ''}>
+                    <div class="topics-editor-toolbar">
+                        <div class="topics-editor-title">Subtemas</div>
+                        <button class="btn btn-secondary btn-small" type="button" data-action="topic_add_root">+ Subtema</button>
+                    </div>
+                    <div class="topics-list-editor">${topicsHtml}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (subjectCategoriesBuilder && !subjectCategoriesBuilder.dataset.bound) {
+        subjectCategoriesBuilder.dataset.bound = '1';
+
+        subjectCategoriesBuilder.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+
+            const action = btn.dataset.action;
+            const catEl = btn.closest('.category-editor');
+            const catId = catEl ? Number(catEl.dataset.catId) : null;
+            const cat = catId ? findDraftCategory(catId) : null;
+
+            if (action.startsWith('cat_')) {
+                if (!cat) return;
+                if (action === 'cat_toggle') {
+                    cat.collapsed = !cat.collapsed;
+                    renderAddSubjectBuilder();
+                } else if (action === 'cat_delete') {
+                    addSubjectDraft.categories = addSubjectDraft.categories.filter(c => c.id !== cat.id);
+                    if (addSubjectDraft.categories.length === 0) addSubjectDraft.categories.push(createDraftCategory());
+                    renderAddSubjectBuilder();
+                }
+                return;
+            }
+
+            if (!cat) return;
+            if (!Array.isArray(cat.topics)) cat.topics = [];
+
+            const row = btn.closest('.topic-row');
+            const topicId = row ? Number(row.dataset.topicId) : null;
+            const topicIndex = topicId ? findTopicIndexById(cat, topicId) : -1;
+
+            if (action === 'topic_add_root') {
+                cat.topics.push(createDraftTopic(1));
+                renderAddSubjectBuilder();
+                return;
+            }
+
+            if (topicIndex < 0) return;
+
+            const topics = cat.topics;
+            const t = topics[topicIndex];
+            const lastDesc = draftLastDescendantIndex(topics, topicIndex);
+            const insertAt = lastDesc + 1;
+
+            if (action === 'topic_toggle') {
+                const hasChildren = topicIndex + 1 < topics.length && topics[topicIndex + 1].depth > t.depth;
+                if (!hasChildren) return;
+                t.collapsed = !t.collapsed;
+                renderAddSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_add_child') {
+                t.collapsed = false;
+                topics.splice(insertAt, 0, createDraftTopic(t.depth + 1));
+                renderAddSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_add_sibling') {
+                topics.splice(insertAt, 0, createDraftTopic(t.depth));
+                renderAddSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_delete') {
+                const start = topicIndex;
+                const end = draftLastDescendantIndex(topics, topicIndex);
+                topics.splice(start, (end - start) + 1);
+                if (topics.length === 0) topics.push(createDraftTopic(1));
+                renderAddSubjectBuilder();
+                return;
+            }
+        });
+
+        subjectCategoriesBuilder.addEventListener('input', (e) => {
+            const el = e.target;
+            if (!(el instanceof HTMLInputElement)) return;
+
+            const field = el.dataset.field;
+            if (!field) return;
+
+            const catEl = el.closest('.category-editor');
+            const catId = catEl ? Number(catEl.dataset.catId) : null;
+            const cat = catId ? findDraftCategory(catId) : null;
+            if (!cat) return;
+
+            if (field === 'cat_name') {
+                cat.name = el.value;
+                return;
+            }
+
+            if (field === 'cat_icon') {
+                cat.icon = el.value;
+                return;
+            }
+
+            if (field === 'topic_name') {
+                const row = el.closest('.topic-row');
+                const topicId = row ? Number(row.dataset.topicId) : null;
+                const idx = topicId ? findTopicIndexById(cat, topicId) : -1;
+                if (idx >= 0) cat.topics[idx].name = el.value;
+            }
+        });
+    }
+}
+
+function normalizeImportedTopicListToLevels(topics) {
+    const out = [];
+
+    const pushTopic = (name, level) => {
+        const n = String(name ?? '').trim();
+        if (!n) return;
+        out.push({ name: n, level: Math.max(1, Math.min(20, Number(level) || 1)) });
+    };
+
+    const walk = (node, level) => {
+        if (node == null) return;
+        if (typeof node === 'string' || typeof node === 'number') {
+            pushTopic(String(node), level);
+            return;
+        }
+
+        if (Array.isArray(node)) {
+            for (const child of node) walk(child, level);
+            return;
+        }
+
+        if (typeof node === 'object') {
+            const name = node.name ?? node.title ?? '';
+            const ownLevel = node.level != null ? node.level : level;
+            pushTopic(name, ownLevel);
+            if (Array.isArray(node.children)) {
+                for (const child of node.children) walk(child, (Number(ownLevel) || level) + 1);
+            }
+        }
+    };
+
+    walk(topics, 1);
+    return out;
+}
+
+function applyImportedSubjectToDraft(payload) {
+    if (!payload || typeof payload !== 'object') {
+        throw new Error('JSON inválido');
+    }
+
+    const subjectPayload = Array.isArray(payload.subjects) ? (payload.subjects[0] ?? null) : payload;
+    if (!subjectPayload || typeof subjectPayload !== 'object') {
+        throw new Error('No se encontró una materia en el archivo');
+    }
+
+    const name = String(subjectPayload.name ?? subjectPayload.title ?? '').trim();
+    const icon = String(subjectPayload.icon ?? '📚').trim();
+    const color = String(subjectPayload.color ?? '#667eea').trim();
+
+    const categories = Array.isArray(subjectPayload.categories) ? subjectPayload.categories : null;
+    const rootTopics = subjectPayload.topics ?? null;
+
+    const normalizedCategories = (categories ?? [{
+        name: subjectPayload.categoryName ?? 'Contenido',
+        icon: subjectPayload.categoryIcon ?? '📌',
+        topics: rootTopics ?? []
+    }]).map((c) => {
+        const catName = String(c.name ?? '').trim();
+        const catIcon = String(c.icon ?? '📌').trim();
+        const topicLevels = normalizeImportedTopicListToLevels(c.topics ?? []);
+        return { name: catName, icon: catIcon, topics: topicLevels };
+    }).filter(c => (c.name && c.topics.length) || c.topics.length);
+
+    subjectNameInput.value = name || subjectNameInput.value;
+    subjectIconInput.value = icon || subjectIconInput.value;
+    if (subjectColorInput && /^#([0-9a-fA-F]{6})$/.test(color)) subjectColorInput.value = color;
+
+    addSubjectDraft = {
+        categories: normalizedCategories.map(c => ({
+            id: addSubjectDraftId(),
+            name: c.name,
+            icon: c.icon || '📌',
+            collapsed: false,
+            topics: (c.topics.length ? c.topics : [{ name: '', level: 1 }]).map(t => ({
+                id: addSubjectDraftId(),
+                name: t.name,
+                depth: t.level ?? 1,
+                collapsed: false
+            }))
+        }))
+    };
+
+    if (!addSubjectDraft.categories.length) {
+        addSubjectDraft.categories.push(createDraftCategory());
+    }
+
+    renderAddSubjectBuilder();
 }
 
 function showAddSubjectModal() {
     subjectNameInput.value = '';
     subjectIconInput.value = '📚';
     subjectColorInput.value = '#667eea';
+
+    addSubjectDraft = { categories: [createDraftCategory()] };
+    setAddSubjectModalTab('manual');
+
+    if (subjectImportFile) subjectImportFile.value = '';
+    if (subjectImportStatus) subjectImportStatus.textContent = '';
+
+    renderAddSubjectBuilder();
     addSubjectModal.classList.add('active');
 }
 
 function hideAddSubjectModal() {
     addSubjectModal.classList.remove('active');
+}
+
+function setEditSubjectModalTab(tab) {
+    const setActive = (btn, on) => {
+        if (!btn) return;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    };
+
+    const show = (el, on) => {
+        if (!el) return;
+        el.hidden = !on;
+    };
+
+    const isDetails = tab === 'details';
+    const isStructure = tab === 'structure';
+    const isAchievements = tab === 'achievements';
+    const isReset = tab === 'reset';
+
+    setActive(editSubjectTabDetails, isDetails);
+    setActive(editSubjectTabStructure, isStructure);
+    setActive(editSubjectTabAchievements, isAchievements);
+    setActive(editSubjectTabReset, isReset);
+
+    show(editSubjectDetailsSection, isDetails);
+    show(editSubjectStructureSection, isStructure);
+    show(editSubjectAchievementsSection, isAchievements);
+    show(editSubjectResetSection, isReset);
+}
+
+function ensureEditSubjectDraft() {
+    if (!editSubjectDraft) {
+        editSubjectDraft = { categories: [createDraftCategory()] };
+    }
+    if (!Array.isArray(editSubjectDraft.categories)) editSubjectDraft.categories = [];
+}
+
+function editDraftFromSubject(subject) {
+    const draft = { categories: [] };
+    for (const cat of subject?.categories ?? []) {
+        const topics = Array.isArray(cat.topics) ? cat.topics : [];
+        draft.categories.push({
+            id: Number(cat.id) || addSubjectDraftId(),
+            name: cat.name ?? '',
+            icon: cat.icon ?? '📌',
+            collapsed: false,
+            topics: topics.map((t, idx) => ({
+                id: addSubjectDraftId(),
+                name: t.name ?? '',
+                depth: Math.max(1, Math.min(20, Number(t.level) || 1)),
+                collapsed: false,
+                sourceIndex: idx
+            }))
+        });
+    }
+
+    if (draft.categories.length === 0) draft.categories.push(createDraftCategory());
+    return draft;
+}
+
+function findEditDraftCategory(catId) {
+    ensureEditSubjectDraft();
+    return editSubjectDraft.categories.find(c => c.id === catId) || null;
+}
+
+function findEditTopicIndexById(cat, topicId) {
+    if (!cat || !Array.isArray(cat.topics)) return -1;
+    return cat.topics.findIndex(t => t.id === topicId);
+}
+
+function renderEditSubjectBuilder() {
+    ensureEditSubjectDraft();
+    if (!editSubjectCategoriesBuilder) return;
+
+    if (editSubjectDraft.categories.length === 0) {
+        editSubjectDraft.categories.push(createDraftCategory());
+    }
+
+    const escAttr = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    editSubjectCategoriesBuilder.innerHTML = editSubjectDraft.categories.map((cat) => {
+        const catChevron = cat.collapsed ? '▸' : '▾';
+
+        const topics = Array.isArray(cat.topics) ? cat.topics : [];
+        const htmlRows = [];
+        const collapsedStack = [];
+
+        for (let i = 0; i < topics.length; i++) {
+            const t = topics[i];
+            while (collapsedStack.length && t.depth <= collapsedStack[collapsedStack.length - 1]) {
+                collapsedStack.pop();
+            }
+
+            const hidden = collapsedStack.length > 0;
+            const hasChildren = i + 1 < topics.length && topics[i + 1].depth > t.depth;
+            const chevron = t.collapsed ? '▸' : '▾';
+            const inputIndent = (Math.max(1, t.depth) - 1) * 16;
+
+            const collapseBtn = hasChildren
+                ? `<button class="topic-collapse" type="button" data-action="topic_toggle" title="Desplegar / Cerrar">${chevron}</button>`
+                : `<button class="topic-collapse placeholder" type="button" disabled title="Sin subtemas">•</button>`;
+
+            htmlRows.push(`
+                <div class="topic-row ${hidden ? 'is-hidden' : ''}" data-topic-id="${t.id}">
+                    ${collapseBtn}
+                    <input class="topic-input" data-field="topic_name" type="text" placeholder="Subtema" value="${escAttr(t.name ?? '')}" style="margin-left:${inputIndent}px" />
+                    <button class="topic-action" type="button" data-action="topic_add_child" title="Agregar subtema">↳</button>
+                    <button class="topic-action" type="button" data-action="topic_add_sibling" title="Agregar al mismo nivel">+</button>
+                    <button class="topic-action" type="button" data-action="topic_delete" title="Eliminar">×</button>
+                </div>
+            `);
+
+            if (!hidden && hasChildren && t.collapsed) {
+                collapsedStack.push(t.depth);
+            }
+        }
+
+        const topicsHtml = htmlRows.join('') || '<div class="builder-subtitle">Agregá subtemas para este tema.</div>';
+
+        return `
+            <div class="category-editor" data-cat-id="${cat.id}">
+                <div class="category-editor-header">
+                    <button class="mini-btn" type="button" data-action="cat_toggle" title="Desplegar / Cerrar">${catChevron}</button>
+                    <input class="mini-input" data-field="cat_icon" type="text" placeholder="📌" value="${escAttr(cat.icon ?? '')}" />
+                    <input class="mini-input" data-field="cat_name" type="text" placeholder="Tema (ej: Álgebra)" value="${escAttr(cat.name ?? '')}" />
+                    <button class="mini-btn" type="button" data-action="cat_delete" title="Eliminar tema">×</button>
+                </div>
+                <div class="category-editor-body" ${cat.collapsed ? 'hidden' : ''}>
+                    <div class="topics-editor-toolbar">
+                        <div class="topics-editor-title">Subtemas</div>
+                        <button class="btn btn-secondary btn-small" type="button" data-action="topic_add_root">➕ Subtema</button>
+                    </div>
+                    <div class="topics-list-editor">${topicsHtml}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (editSubjectCategoriesBuilder && !editSubjectCategoriesBuilder.dataset.bound) {
+        editSubjectCategoriesBuilder.dataset.bound = '1';
+
+        editSubjectCategoriesBuilder.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+
+            const action = btn.dataset.action;
+            const catEl = btn.closest('.category-editor');
+            const catId = catEl ? Number(catEl.dataset.catId) : null;
+            const cat = catId ? findEditDraftCategory(catId) : null;
+
+            if (action.startsWith('cat_')) {
+                if (!cat) return;
+                if (action === 'cat_toggle') {
+                    cat.collapsed = !cat.collapsed;
+                    renderEditSubjectBuilder();
+                } else if (action === 'cat_delete') {
+                    editSubjectDraft.categories = editSubjectDraft.categories.filter(c => c.id !== cat.id);
+                    if (editSubjectDraft.categories.length === 0) editSubjectDraft.categories.push(createDraftCategory());
+                    renderEditSubjectBuilder();
+                }
+                return;
+            }
+
+            if (!cat) return;
+            if (!Array.isArray(cat.topics)) cat.topics = [];
+
+            const row = btn.closest('.topic-row');
+            const topicId = row ? Number(row.dataset.topicId) : null;
+            const topicIndex = topicId ? findEditTopicIndexById(cat, topicId) : -1;
+
+            if (action === 'topic_add_root') {
+                cat.topics.push(createDraftTopic(1));
+                renderEditSubjectBuilder();
+                return;
+            }
+
+            if (topicIndex < 0) return;
+
+            const topics = cat.topics;
+            const t = topics[topicIndex];
+            const lastDesc = draftLastDescendantIndex(topics, topicIndex);
+            const insertAt = lastDesc + 1;
+
+            if (action === 'topic_toggle') {
+                const hasChildren = topicIndex + 1 < topics.length && topics[topicIndex + 1].depth > t.depth;
+                if (!hasChildren) return;
+                t.collapsed = !t.collapsed;
+                renderEditSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_add_child') {
+                t.collapsed = false;
+                topics.splice(insertAt, 0, createDraftTopic(t.depth + 1));
+                renderEditSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_add_sibling') {
+                topics.splice(insertAt, 0, createDraftTopic(t.depth));
+                renderEditSubjectBuilder();
+                return;
+            }
+
+            if (action === 'topic_delete') {
+                const start = topicIndex;
+                const end = draftLastDescendantIndex(topics, topicIndex);
+                topics.splice(start, (end - start) + 1);
+                if (topics.length === 0) topics.push(createDraftTopic(1));
+                renderEditSubjectBuilder();
+                return;
+            }
+        });
+
+        editSubjectCategoriesBuilder.addEventListener('input', (e) => {
+            const el = e.target;
+            if (!(el instanceof HTMLInputElement)) return;
+
+            const field = el.dataset.field;
+            if (!field) return;
+
+            const catEl = el.closest('.category-editor');
+            const catId = catEl ? Number(catEl.dataset.catId) : null;
+            const cat = catId ? findEditDraftCategory(catId) : null;
+            if (!cat) return;
+
+            if (field === 'cat_name') {
+                cat.name = el.value;
+                return;
+            }
+
+            if (field === 'cat_icon') {
+                cat.icon = el.value;
+                return;
+            }
+
+            if (field === 'topic_name') {
+                const row = el.closest('.topic-row');
+                const topicId = row ? Number(row.dataset.topicId) : null;
+                const idx = topicId ? findEditTopicIndexById(cat, topicId) : -1;
+                if (idx >= 0) cat.topics[idx].name = el.value;
+            }
+        });
+    }
+}
+
+function renderCustomAchievementsEditor(subject) {
+    if (!customAchievementsList) return;
+    const list = Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : [];
+
+    const escAttr = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    if (list.length === 0) {
+        customAchievementsList.innerHTML = '<div class="builder-subtitle">No hay logros personalizados todavía.</div>';
+        return;
+    }
+
+    const metaFor = (a) => {
+        if (a.type === 'pct') return `📊 ${a.value}% completado`;
+        if (a.type === 'focus_minutes') return `⏱️ ${a.value} min en esta materia`;
+        if (a.type === 'category_complete') {
+            const cat = (subject.categories ?? []).find(c => c.id === a.categoryId);
+            return `✅ Completar tema: ${cat?.name ?? 'Tema'}`;
+        }
+        return 'Personalizado';
+    };
+
+    customAchievementsList.innerHTML = list.map(a => `
+        <div class="custom-ach-item" data-custom-ach-id="${escAttr(a.id)}">
+            <div class="custom-ach-main">
+                <div class="custom-ach-title">🏆 ${escapeHtml(a.title ?? 'Logro')}</div>
+                <div class="custom-ach-meta">${escapeHtml(metaFor(a))}</div>
+            </div>
+            <button class="topic-action" type="button" data-action="custom_delete" title="Eliminar logro">🗑️</button>
+        </div>
+    `).join('');
+
+    if (!customAchievementsList.dataset.bound) {
+        customAchievementsList.dataset.bound = '1';
+        customAchievementsList.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-action="custom_delete"]');
+            if (!btn) return;
+            if (!currentSubject) return;
+
+            const item = btn.closest('.custom-ach-item');
+            const id = item ? item.dataset.customAchId : null;
+            if (!id) return;
+
+            const customList = Array.isArray(currentSubject?.meta?.customAchievements) ? currentSubject.meta.customAchievements : [];
+            const ach = customList.find(x => x.id === id);
+            if (!ach) return;
+
+            const ok = await showConfirmModalV2({
+                title: '🗑️ Eliminar logro personalizado',
+                text: `Se eliminará el logro "${ach.title ?? 'Logro'}" y su estado de desbloqueo. No afecta logros automáticos.`,
+                confirmText: 'Sí, eliminar',
+                cancelText: 'Cancelar',
+                fallbackText: '¿Eliminar logro?'
+            });
+            if (!ok) return;
+
+            currentSubject.meta.customAchievements = customList.filter(x => x.id !== id);
+            if (currentSubject?.meta?.achievements) delete currentSubject.meta.achievements[id];
+            saveData(true);
+            renderCustomAchievementsEditor(currentSubject);
+            renderAchievementsV2();
+            renderHomePage();
+        });
+    }
+}
+
+function syncCustomAchievementTypeUi(subject) {
+    if (!customAchType || !customAchCategory || !customAchValueRow || !customAchCategoryRow) return;
+    const type = customAchType.value;
+
+    customAchValueRow.hidden = type === 'category_complete';
+    customAchCategoryRow.hidden = type !== 'category_complete';
+
+    if (type === 'category_complete') {
+        const cats = subject?.categories ?? [];
+        customAchCategory.innerHTML = cats.map(c => `<option value="${String(c.id)}">${escapeHtml(c.icon ? `${c.icon} ` : '')}${escapeHtml(c.name ?? 'Tema')}</option>`).join('');
+    }
+}
+
+function showEditSubjectModal() {
+    if (!currentSubject || !editSubjectModal) {
+        showNotification('Selecciona una materia primero');
+        return;
+    }
+
+    editingSubjectId = currentSubject.id;
+    editSubjectDraft = editDraftFromSubject(currentSubject);
+
+    if (editSubjectNameInput) editSubjectNameInput.value = currentSubject.name ?? '';
+    if (editSubjectIconInput) editSubjectIconInput.value = currentSubject.icon ?? '📚';
+    if (editSubjectColorInput) editSubjectColorInput.value = currentSubject.color ?? '#667eea';
+
+    setEditSubjectModalTab('details');
+    renderEditSubjectBuilder();
+    renderCustomAchievementsEditor(currentSubject);
+    syncCustomAchievementTypeUi(currentSubject);
+
+    if (customAchTitle) customAchTitle.value = '';
+    if (customAchDesc) customAchDesc.value = '';
+    if (customAchValue) customAchValue.value = '';
+    if (customAchStatus) customAchStatus.textContent = '';
+
+    editSubjectModal.classList.add('active');
+}
+
+function hideEditSubjectModal() {
+    if (!editSubjectModal) return;
+    editSubjectModal.classList.remove('active');
+    editingSubjectId = null;
+    editSubjectDraft = null;
+}
+
+function pruneSubjectAchievementsToDefinitions(subject) {
+    if (!subject?.meta?.achievements) return;
+    const defs = subjectAchievementDefinitionsV2(subject);
+    const allowed = new Set(defs.map(d => d.id));
+
+    for (const id of Object.keys(subject.meta.achievements)) {
+        if (!allowed.has(id)) delete subject.meta.achievements[id];
+    }
+}
+
+function applyEditDraftToSubject(subject) {
+    if (!subject) return;
+    ensureEditSubjectDraft();
+
+    const originalCategoriesById = new Map((subject.categories ?? []).map(c => [Number(c.id), c]));
+
+    const newCategories = [];
+    for (const dc of editSubjectDraft.categories ?? []) {
+        const name = String(dc.name ?? '').trim() || 'Tema';
+        const icon = String(dc.icon ?? '').trim() || '📌';
+        const catId = Number(dc.id) || addSubjectDraftId();
+
+        const originalCat = originalCategoriesById.get(catId) ?? null;
+        const originalTopics = Array.isArray(originalCat?.topics) ? originalCat.topics : [];
+
+        const draftTopics = Array.isArray(dc.topics) ? dc.topics : [];
+        const topics = draftTopics
+            .filter(t => String(t.name ?? '').trim())
+            .map(t => {
+                const depth = Math.max(1, Math.min(20, Number(t.depth) || 1));
+                const src = (t.sourceIndex != null) ? originalTopics[t.sourceIndex] : null;
+                const obj = src ? src : { name: '', level: 1, completed: false, completedAt: null, reviews: [] };
+                obj.name = String(t.name ?? '').trim();
+                obj.level = depth;
+                if (!Array.isArray(obj.reviews)) obj.reviews = [];
+                if (obj.completed && obj.completedAt == null) obj.completedAt = Date.now();
+                return obj;
+            });
+
+        const catObj = originalCat ? { ...originalCat } : { id: catId };
+        catObj.id = catId;
+        catObj.name = name;
+        catObj.icon = icon;
+        catObj.topics = topics;
+        newCategories.push(catObj);
+    }
+
+    subject.categories = newCategories;
+    pruneSubjectAchievementsToDefinitions(subject);
+}
+
+function editingSubjectRef() {
+    if (!appState) return null;
+    if (editingSubjectId == null) return currentSubject;
+    return appState.subjects.find(s => s.id === editingSubjectId) ?? currentSubject;
+}
+
+function saveEditedSubject() {
+    const subject = editingSubjectRef();
+    if (!subject) return false;
+
+    const name = String(editSubjectNameInput?.value ?? '').trim();
+    if (!name) {
+        showNotification('El nombre es obligatorio');
+        return false;
+    }
+
+    const icon = String(editSubjectIconInput?.value ?? '📚').trim() || '📚';
+    const color = String(editSubjectColorInput?.value ?? subject.color ?? '#667eea');
+
+    subject.name = name;
+    subject.icon = icon;
+    subject.color = color;
+
+    applyEditDraftToSubject(subject);
+    checkSubjectAchievementsV2(subject, { silent: true });
+
+    saveData(true);
+    renderSubjectList();
+    renderAll();
+
+    return true;
+}
+
+function resetSubjectProgress(subject) {
+    if (!subject) return;
+
+    // Preserve identity + settings
+    const preserved = {
+        id: subject.id,
+        name: subject.name,
+        icon: subject.icon,
+        color: subject.color,
+        categories: subject.categories,
+        difficulty: subject?.meta?.difficulty ?? 'normal',
+        customAchievements: Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : []
+    };
+
+    // Reset topic completion + reviews
+    for (const category of preserved.categories ?? []) {
+        for (const topic of category.topics ?? []) {
+            topic.completed = false;
+            topic.completedAt = null;
+            topic.reviews = [];
+        }
+    }
+
+    // Reset meta stats/timer/skills/achievements
+    const freshMeta = createSubject(preserved.id, preserved.name, preserved.icon, preserved.color).meta;
+    freshMeta.difficulty = preserved.difficulty;
+    freshMeta.customAchievements = preserved.customAchievements;
+
+    subject.meta = freshMeta;
+    subject.categories = preserved.categories ?? [];
+}
+
+async function resetCurrentSubject() {
+    if (!currentSubject) return;
+    const name = currentSubject.name ?? 'esta materia';
+
+    const ok = await showConfirmModalV2({
+        title: '♻️ Reiniciar esta materia',
+        text: `Esto borra el progreso de "${name}" (temas completados, sesiones, XP y logros de esta materia). La estructura (temas/subtemas) se mantiene.`,
+        confirmText: 'Sí, reiniciar materia',
+        cancelText: 'Cancelar',
+        fallbackText: `¿Reiniciar "${name}"?`
+    });
+    if (!ok) return;
+
+    resetSubjectProgress(currentSubject);
+    saveData(true);
+    renderAll();
+    showNotification(`Materia "${name}" reiniciada.`);
 }
 
 function addSubject() {
@@ -1736,6 +2964,44 @@ function addSubject() {
     }
     
     const newSubject = createSubject(Date.now(), name, icon || '📚', color);
+
+    ensureAddSubjectDraft();
+    const baseId = Date.now() + 100;
+
+    const categories = (addSubjectDraft.categories || []).map((cat, idx) => {
+        const catNameRaw = String(cat.name ?? '').trim();
+        const catIcon = String(cat.icon ?? '').trim() || '📌';
+        const catId = baseId + idx;
+
+        const topics = Array.isArray(cat.topics) ? cat.topics : [];
+        const normalizedTopics = topics
+            .filter(t => String(t.name ?? '').trim())
+            .map(t => ({
+                name: String(t.name ?? '').trim(),
+                level: Math.max(1, Math.min(20, Number(t.depth) || 1)),
+                completed: false,
+                completedAt: null,
+                reviews: []
+            }));
+
+        if (!catNameRaw && normalizedTopics.length === 0) return null;
+
+        const catName = catNameRaw || `Tema ${idx + 1}`;
+
+        return {
+            id: catId,
+            name: catName,
+            icon: catIcon,
+            topics: normalizedTopics
+        };
+    }).filter(Boolean);
+
+    if (categories.length) {
+        newSubject.categories = categories;
+    } else {
+        newSubject.categories = [];
+    }
+
     appState.subjects.push(newSubject);
     saveData(true);
     hideAddSubjectModal();
@@ -1744,12 +3010,17 @@ function addSubject() {
     showNotification(`Materia "${name}" creada`);
 }
 
-function deleteCurrentSubject() {
+async function deleteCurrentSubject() {
     if (!currentSubject) return;
-    
-    if (!confirm(`¿Eliminar la materia "${currentSubject.name}"? Esta acción no se puede deshacer.`)) {
-        return;
-    }
+
+    const ok = await showConfirmModalV2({
+        title: '🗑️ Eliminar materia',
+        text: `Esto elimina la materia "${currentSubject.name}" y todo su progreso/logros. No se puede deshacer.`,
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Cancelar',
+        fallbackText: `¿Eliminar "${currentSubject.name}"?`
+    });
+    if (!ok) return;
     
     const index = appState.subjects.findIndex(sub => sub.id === currentSubject.id);
     if (index !== -1) {
@@ -1767,7 +3038,13 @@ function deleteCurrentSubject() {
 
 function renderHomePage() {
     const totalSubjects = appState.subjects.length;
-    const totalAchievements = Object.keys(appState.globalMeta.achievements).length;
+    const unlockedGlobal = globalAchievementDefinitionsV2().reduce((sum, a) => sum + ((appState.globalMeta.achievements ?? {})[a.id] ? 1 : 0), 0);
+    const unlockedSubject = (appState.subjects ?? []).reduce((sum, s) => {
+        const prefix = `subj_${s.id}_`;
+        const ids = Object.keys(s?.meta?.achievements ?? {}).filter(id => id.startsWith(prefix));
+        return sum + ids.length;
+    }, 0);
+    const totalAchievements = unlockedGlobal + unlockedSubject;
     const totalTime = prettyTime(appState.globalMeta.totalFocusSeconds);
     const globalProgress = calculateGlobalProgress();
     
@@ -1831,12 +3108,7 @@ function getSubjectLastActivity(subject) {
 }
 
 function setupEventListeners() {
-    saveBtn.addEventListener('click', () => {
-        saveData(true);
-        showNotification('Progreso guardado.');
-    });
-
-    resetBtn.addEventListener('click', resetData);
+    if (resetBtn) resetBtn.addEventListener('click', resetCurrentSubject);
 
     categoriesContainer.addEventListener('click', (e) => {
         const topicItem = e.target.closest('.topic-item');
@@ -1861,6 +3133,156 @@ function setupEventListeners() {
     closeModalBtn.addEventListener('click', hideAddSubjectModal);
     cancelModalBtn.addEventListener('click', hideAddSubjectModal);
     confirmAddSubjectBtn.addEventListener('click', addSubject);
+
+    if (addSubjectTabManual) {
+        addSubjectTabManual.addEventListener('click', () => setAddSubjectModalTab('manual'));
+    }
+    if (addSubjectTabImport) {
+        addSubjectTabImport.addEventListener('click', () => setAddSubjectModalTab('import'));
+    }
+
+    if (addCategoryBtn) {
+        addCategoryBtn.addEventListener('click', () => {
+            ensureAddSubjectDraft();
+            addSubjectDraft.categories.push(createDraftCategory());
+            renderAddSubjectBuilder();
+        });
+    }
+
+    if (subjectImportFile) {
+        subjectImportFile.addEventListener('change', () => {
+            const file = subjectImportFile.files && subjectImportFile.files[0];
+            if (!file) return;
+
+            if (subjectImportStatus) subjectImportStatus.textContent = 'Leyendo archivo…';
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const text = String(reader.result ?? '');
+                    const payload = JSON.parse(text);
+                    applyImportedSubjectToDraft(payload);
+                    setAddSubjectModalTab('manual');
+                    if (subjectImportStatus) subjectImportStatus.textContent = 'Importación lista. Revisá y tocá “Crear”.';
+                } catch (err) {
+                    console.error(err);
+                    if (subjectImportStatus) subjectImportStatus.textContent = 'No se pudo importar: JSON inválido o estructura no soportada.';
+                }
+            };
+            reader.onerror = () => {
+                if (subjectImportStatus) subjectImportStatus.textContent = 'No se pudo leer el archivo.';
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (editSubjectBtn) {
+        editSubjectBtn.addEventListener('click', showEditSubjectModal);
+    }
+    if (closeEditSubjectModalBtn) closeEditSubjectModalBtn.addEventListener('click', hideEditSubjectModal);
+    if (cancelEditSubjectModalBtn) cancelEditSubjectModalBtn.addEventListener('click', hideEditSubjectModal);
+    if (confirmEditSubjectModalBtn) {
+        confirmEditSubjectModalBtn.addEventListener('click', () => {
+            const ok = saveEditedSubject();
+            if (ok) {
+                showNotification('Cambios guardados.');
+                hideEditSubjectModal();
+            }
+        });
+    }
+
+    if (editSubjectTabDetails) editSubjectTabDetails.addEventListener('click', () => setEditSubjectModalTab('details'));
+    if (editSubjectTabStructure) editSubjectTabStructure.addEventListener('click', () => setEditSubjectModalTab('structure'));
+    if (editSubjectTabAchievements) editSubjectTabAchievements.addEventListener('click', () => setEditSubjectModalTab('achievements'));
+    if (editSubjectTabReset) editSubjectTabReset.addEventListener('click', () => setEditSubjectModalTab('reset'));
+
+    if (editAddCategoryBtn) {
+        editAddCategoryBtn.addEventListener('click', () => {
+            ensureEditSubjectDraft();
+            editSubjectDraft.categories.push(createDraftCategory());
+            renderEditSubjectBuilder();
+            const subject = editingSubjectRef();
+            if (subject) syncCustomAchievementTypeUi(subject);
+        });
+    }
+
+    if (resetSubjectBtn) {
+        resetSubjectBtn.addEventListener('click', async () => {
+            await resetCurrentSubject();
+            hideEditSubjectModal();
+        });
+    }
+
+    if (customAchType) {
+        customAchType.addEventListener('change', () => {
+            const subject = editingSubjectRef();
+            if (subject) syncCustomAchievementTypeUi(subject);
+        });
+    }
+
+    if (addCustomAchievementBtn) {
+        addCustomAchievementBtn.addEventListener('click', async () => {
+            const subject = editingSubjectRef();
+            if (!subject) return;
+
+            if (!subject.meta) subject.meta = {};
+            if (!Array.isArray(subject.meta.customAchievements)) subject.meta.customAchievements = [];
+
+            const title = String(customAchTitle?.value ?? '').trim();
+            const desc = String(customAchDesc?.value ?? '').trim();
+            const type = String(customAchType?.value ?? 'pct');
+
+            if (!title) {
+                if (customAchStatus) customAchStatus.textContent = 'El título es obligatorio.';
+                return;
+            }
+
+            const ach = {
+                id: `custom_${subject.id}_${Date.now()}`,
+                title,
+                desc,
+                type,
+                value: null,
+                categoryId: null
+            };
+
+            if (type === 'pct') {
+                const v = Number(String(customAchValue?.value ?? '').trim());
+                if (!Number.isFinite(v) || v <= 0 || v > 100) {
+                    if (customAchStatus) customAchStatus.textContent = 'Usá un porcentaje entre 1 y 100.';
+                    return;
+                }
+                ach.value = Math.round(v);
+            } else if (type === 'focus_minutes') {
+                const v = Number(String(customAchValue?.value ?? '').trim());
+                if (!Number.isFinite(v) || v <= 0) {
+                    if (customAchStatus) customAchStatus.textContent = 'Usá una cantidad de minutos mayor a 0.';
+                    return;
+                }
+                ach.value = Math.round(v);
+            } else if (type === 'category_complete') {
+                const cid = Number(customAchCategory?.value);
+                if (!Number.isFinite(cid)) {
+                    if (customAchStatus) customAchStatus.textContent = 'Elegí un tema válido.';
+                    return;
+                }
+                ach.categoryId = cid;
+            }
+
+            subject.meta.customAchievements.push(ach);
+            if (customAchStatus) customAchStatus.textContent = 'Logro agregado.';
+
+            if (customAchTitle) customAchTitle.value = '';
+            if (customAchDesc) customAchDesc.value = '';
+            if (customAchValue) customAchValue.value = '';
+
+            saveData(true);
+            checkSubjectAchievementsV2(subject, { silent: true });
+            renderCustomAchievementsEditor(subject);
+            renderAchievementsV2();
+            renderHomePage();
+        });
+    }
 
     deleteSubjectBtn.addEventListener('click', deleteCurrentSubject);
 
@@ -1894,6 +3316,10 @@ function setupEventListeners() {
             // ignore
         }
     });
+
+    if (quickResetAll) {
+        quickResetAll.addEventListener('click', resetData);
+    }
 
     document.querySelectorAll('.nav-item[data-view="homeView"]').forEach(btn => {
         btn.addEventListener('click', () => {

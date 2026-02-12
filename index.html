@@ -103,6 +103,12 @@
                                 <div class="action-title">Ver Estadísticas</div>
                                 <div class="action-desc">Analiza tu progreso detallado</div>
                             </button>
+
+                            <button class="action-card" id="quickResetAll">
+                                <div class="action-icon">🧨</div>
+                                <div class="action-title">Reiniciar TODO</div>
+                                <div class="action-desc">Borra todas las materias y el progreso global</div>
+                            </button>
                         </div>
                     </div>
 
@@ -124,8 +130,8 @@
                                     <p class="subtitle" id="subjectSubtitle">Progreso de estudio</p>
                                 </div>
                                 <div class="subject-actions">
-                                    <button class="btn btn-secondary" id="editSubjectBtn">Editar</button>
-                                    <button class="btn btn-secondary" id="deleteSubjectBtn">Eliminar</button>
+                                    <button class="btn btn-secondary" id="editSubjectBtn">✏️ Editar</button>
+                                    <button class="btn btn-secondary" id="deleteSubjectBtn">🗑️ Eliminar</button>
                                 </div>
                             </div>
 
@@ -275,12 +281,28 @@
                     </main>
 
                     <footer class="footer">
-                        <button class="btn btn-primary" id="saveBtn">Guardar Progreso</button>
-                        <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
+                        <button class="btn btn-danger" id="resetBtn">♻️ Reiniciar esta materia</button>
                     </footer>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Confirmación (acciones peligrosas) -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 id="confirmModalTitle">Confirmar</h3>
+                <button class="modal-close" id="confirmModalCloseBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-text" id="confirmModalText"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="confirmModalCancelBtn">Cancelar</button>
+                <button class="btn btn-danger" id="confirmModalConfirmBtn">Confirmar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal para nueva materia -->
@@ -291,6 +313,12 @@
                 <button class="modal-close" id="closeModalBtn">×</button>
             </div>
             <div class="modal-body">
+                <div class="modal-tabs" role="tablist" aria-label="Modo de creación">
+                    <button class="modal-tab active" id="addSubjectTabManual" type="button" role="tab" aria-selected="true">Manual</button>
+                    <button class="modal-tab" id="addSubjectTabImport" type="button" role="tab" aria-selected="false">Importar</button>
+                </div>
+
+                <div id="addSubjectManualSection" role="tabpanel">
                 <div class="form-group">
                     <label for="subjectName">Nombre de la Materia</label>
                     <input type="text" id="subjectName" placeholder="Ej: Matemáticas" required>
@@ -303,10 +331,193 @@
                     <label for="subjectColor">Color</label>
                     <input type="color" id="subjectColor" value="#667eea">
                 </div>
+
+                <div class="builder">
+                    <div class="builder-header">
+                        <div>
+                            <div class="builder-title">Temas y subtemas</div>
+                            <div class="builder-subtitle">Agrega temas (categorías) y crea subtemas ilimitados. Podés desplegar/cerrar para que no ocupe demasiado.</div>
+                        </div>
+                        <button class="btn btn-secondary btn-small" id="addCategoryBtn" type="button">+ Tema</button>
+                    </div>
+
+                    <div class="builder-body" id="subjectCategoriesBuilder"></div>
+                </div>
+                </div>
+
+                <div id="addSubjectImportSection" role="tabpanel" hidden>
+                    <div class="import-box">
+                        <div class="import-title">Importar estructura</div>
+                        <div class="import-subtitle">Subí un archivo JSON con la materia y su estructura (temas/subtemas).</div>
+
+                        <div class="form-group">
+                            <label for="subjectImportFile">Archivo</label>
+                            <input type="file" id="subjectImportFile" accept=".json,application/json">
+                        </div>
+
+                        <div class="import-hint">
+                            Podés cargar subtemas de 2 formas:
+                            <pre class="code-block">/* Opción A (con level): */
+{
+  "name": "Matemática",
+  "icon": "📐",
+  "color": "#667eea",
+  "categories": [
+    {
+      "name": "Álgebra",
+      "icon": "🧮",
+      "topics": [
+        { "name": "Matrices", "level": 1 },
+        { "name": "Operaciones con matrices", "level": 2 },
+        { "name": "Multiplicación", "level": 3 },
+        { "name": "Determinantes", "level": 1 }
+      ]
+    }
+  ]
+}
+
+/* Opción B (anidado con children): */
+{
+  "name": "Matemática",
+  "icon": "📐",
+  "color": "#667eea",
+  "categories": [
+    {
+      "name": "Álgebra",
+      "icon": "🧮",
+      "topics": [
+        {
+          "name": "Matrices",
+          "children": [
+            { "name": "Operaciones con matrices",
+              "children": [
+                { "name": "Suma" },
+                { "name": "Multiplicación" }
+              ]
+            },
+            { "name": "Determinantes" }
+          ]
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+
+                        <div class="import-status" id="subjectImportStatus"></div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelModalBtn">Cancelar</button>
                 <button class="btn btn-primary" id="confirmAddSubjectBtn">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar materia -->
+    <div class="modal" id="editSubjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Materia</h3>
+                <button class="modal-close" id="closeEditSubjectModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-tabs" role="tablist" aria-label="Secciones de edición">
+                    <button class="modal-tab active" id="editSubjectTabDetails" type="button" role="tab" aria-selected="true">Detalles</button>
+                    <button class="modal-tab" id="editSubjectTabStructure" type="button" role="tab" aria-selected="false">Estructura</button>
+                    <button class="modal-tab" id="editSubjectTabAchievements" type="button" role="tab" aria-selected="false">Logros</button>
+                    <button class="modal-tab" id="editSubjectTabReset" type="button" role="tab" aria-selected="false">Reiniciar</button>
+                </div>
+
+                <div id="editSubjectDetailsSection" role="tabpanel">
+                    <div class="form-group">
+                        <label for="editSubjectName">Nombre</label>
+                        <input type="text" id="editSubjectName" placeholder="Ej: Matemática" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSubjectIcon">Icono</label>
+                        <input type="text" id="editSubjectIcon" placeholder="Ej: 📐" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSubjectColor">Color</label>
+                        <input type="color" id="editSubjectColor" value="#667eea">
+                    </div>
+                </div>
+
+                <div id="editSubjectStructureSection" role="tabpanel" hidden>
+                    <div class="builder">
+                        <div class="builder-header">
+                            <div>
+                                <div class="builder-title">🧩 Temas y subtemas</div>
+                                <div class="builder-subtitle">Editá la estructura. Podés desplegar/cerrar y eliminar sin que se vuelva infinito.</div>
+                            </div>
+                            <button class="btn btn-secondary btn-small" id="editAddCategoryBtn" type="button">➕ Tema</button>
+                        </div>
+                        <div class="builder-body" id="editSubjectCategoriesBuilder"></div>
+                    </div>
+                </div>
+
+                <div id="editSubjectAchievementsSection" role="tabpanel" hidden>
+                    <div class="builder">
+                        <div class="builder-header">
+                            <div>
+                                <div class="builder-title">🏆 Logros personalizados</div>
+                                <div class="builder-subtitle">Solo se pueden borrar/editar los logros agregados por vos. Los automáticos se generan solos.</div>
+                            </div>
+                        </div>
+
+                        <div class="builder-body">
+                            <div id="customAchievementsList" class="topics-list-editor"></div>
+
+                            <div class="category-editor">
+                                <div class="topics-editor-toolbar">
+                                    <div class="topics-editor-title">➕ Agregar logro</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customAchTitle">Título</label>
+                                    <input type="text" id="customAchTitle" placeholder="Ej: Constancia" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="customAchDesc">Descripción</label>
+                                    <input type="text" id="customAchDesc" placeholder="Ej: Completar 30% sin faltar" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="customAchType">Tipo</label>
+                                    <select id="customAchType" class="difficulty-select">
+                                        <option value="pct">📊 Porcentaje de completado</option>
+                                        <option value="focus_minutes">⏱️ Tiempo total en esta materia</option>
+                                        <option value="category_complete">✅ Completar un tema</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="customAchValueRow">
+                                    <label for="customAchValue">Valor</label>
+                                    <input type="text" id="customAchValue" placeholder="Ej: 50 (porcentaje) o 120 (minutos)" />
+                                </div>
+                                <div class="form-group" id="customAchCategoryRow" hidden>
+                                    <label for="customAchCategory">Tema</label>
+                                    <select id="customAchCategory" class="difficulty-select"></select>
+                                </div>
+
+                                <button class="btn btn-primary" id="addCustomAchievementBtn" type="button">➕ Agregar logro</button>
+                                <div class="import-status" id="customAchStatus"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editSubjectResetSection" role="tabpanel" hidden>
+                    <div class="import-box">
+                        <div class="import-title">♻️ Reiniciar progreso de esta materia</div>
+                        <div class="import-subtitle">Borra progreso, sesiones, XP y logros de esta materia. Mantiene la estructura.</div>
+                        <button class="btn btn-danger" id="resetSubjectBtn" type="button">♻️ Reiniciar esta materia</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelEditSubjectModalBtn">Cancelar</button>
+                <button class="btn btn-primary" id="confirmEditSubjectModalBtn">💾 Guardar cambios</button>
             </div>
         </div>
     </div>
