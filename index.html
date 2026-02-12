@@ -40,6 +40,30 @@
                                     <option value="hardcore">Hardcore</option>
                                 </select>
                             </div>
+                            <div class="timer-pill" title="Modo Pomodoro">
+                                <label class="difficulty-label" for="pomodoroMode">Pomodoro</label>
+                                <select id="pomodoroMode" class="difficulty-select">
+                                    <option value="off">Desactivado</option>
+                                    <option value="25-5">25/5</option>
+                                    <option value="50-10">50/10</option>
+                                    <option value="15-5">15/5</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+                            <div class="timer-pill" title="Alarma">
+                                <label class="difficulty-label" for="alarmMode">Alarma</label>
+                                <select id="alarmMode" class="difficulty-select">
+                                    <option value="off">Desactivado</option>
+                                    <option value="15m">15 min</option>
+                                    <option value="30m">30 min</option>
+                                    <option value="45m">45 min</option>
+                                    <option value="60m">60 min</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+                            <div class="timer-pill" title="Modo Nocturno">
+                                <button id="themeToggleBtn" class="theme-toggle" title="Alternar modo nocturno">🌙</button>
+                            </div>
                         </div>
                         <div class="timer-actions">
                             <button class="btn btn-primary" id="timerToggleBtn">Iniciar</button>

@@ -10,6 +10,209 @@ body {
     min-height: 100vh;
     color: #333;
     line-height: 1.6;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    color: #e2e8f0;
+}
+
+body.dark-mode .header-content,
+body.dark-mode .panel,
+body.dark-mode .category-card {
+    background: rgba(45, 55, 72, 0.95);
+    color: #e2e8f0;
+}
+
+body.dark-mode .title {
+    color: #a78bfa;
+}
+
+body.dark-mode .subtitle {
+    color: #a0aec0;
+}
+
+body.dark-mode .timer-display {
+    color: #e2e8f0;
+}
+
+body.dark-mode .timer-pill {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #e2e8f0;
+}
+
+body.dark-mode .difficulty-label {
+    color: #cbd5e0;
+}
+
+body.dark-mode .difficulty-select {
+    color: #e2e8f0;
+}
+
+body.dark-mode .avatar-caption {
+    color: #a0aec0;
+}
+
+body.dark-mode .xp-level {
+    color: #e2e8f0;
+}
+
+body.dark-mode .xp-total {
+    color: #a0aec0;
+}
+
+body.dark-mode .xp-bar {
+    background: rgba(74, 85, 104, 0.5);
+}
+
+body.dark-mode .xp-sub {
+    color: #a0aec0;
+}
+
+body.dark-mode .tab-btn {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #e2e8f0;
+}
+
+body.dark-mode .tab-btn:hover {
+    background: rgba(74, 85, 104, 0.7);
+}
+
+body.dark-mode .tab-btn.active {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.9), rgba(129, 140, 248, 0.9));
+}
+
+body.dark-mode .card {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+body.dark-mode .card-title {
+    color: #e2e8f0;
+}
+
+body.dark-mode .card-desc {
+    color: #a0aec0;
+}
+
+body.dark-mode .card-meta {
+    color: #a0aec0;
+}
+
+body.dark-mode .map-marker {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+body.dark-mode .map-marker .marker-title {
+    color: #e2e8f0;
+}
+
+body.dark-mode .map-marker .marker-sub {
+    color: #a0aec0;
+}
+
+body.dark-mode .session-item {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+body.dark-mode .session-item:hover {
+    background: rgba(74, 85, 104, 0.7);
+}
+
+body.dark-mode .session-date {
+    color: #e2e8f0;
+}
+
+body.dark-mode .session-time {
+    color: #a0aec0;
+}
+
+body.dark-mode .topic-item {
+    background: rgba(74, 85, 104, 0.5);
+}
+
+body.dark-mode .topic-item:hover {
+    background: rgba(74, 85, 104, 0.7);
+}
+
+body.dark-mode .topic-item.completed {
+    background: rgba(72, 187, 120, 0.2);
+    color: #c6f6d5;
+}
+
+body.dark-mode .topic-name {
+    color: #a0aec0;
+}
+
+body.dark-mode .topic-item.completed .topic-name {
+    color: #c6f6d5;
+}
+
+/* Fix text colors in dark mode */
+body.dark-mode .progress-percentage {
+    color: #a78bfa;
+}
+
+body.dark-mode .progress-header {
+    color: #a0aec0;
+}
+
+body.dark-mode .category-title {
+    color: #e2e8f0;
+}
+
+body.dark-mode .category-progress .progress-percentage {
+    color: #a78bfa;
+}
+
+body.dark-mode .legend-pill {
+    color: #e2e8f0;
+    background: rgba(74, 85, 104, 0.5);
+}
+
+body.dark-mode .topic-badge {
+    color: #fef5e7;
+    background: rgba(245, 124, 0, 0.2);
+    border-color: rgba(245, 124, 0, 0.4);
+}
+
+body.dark-mode .badge {
+    color: #e2e8f0;
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+body.dark-mode .badge.unlocked {
+    background: rgba(72, 187, 120, 0.2);
+    border-color: rgba(72, 187, 120, 0.4);
+}
+
+.theme-toggle {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .theme-toggle {
+    color: #fbbf24;
 }
 
 .container {
@@ -181,6 +384,91 @@ body {
 @keyframes heatPulse {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-2px); }
+}
+
+/* Mejoras visuales para el icono de racha */
+.streak-avatar {
+    position: relative;
+    overflow: hidden;
+}
+
+.streak-avatar::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: 18px;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.18), transparent 55%);
+    z-index: 1;
+}
+
+.streak-avatar::after {
+    content: '';
+    position: absolute;
+    left: -30%;
+    bottom: -40%;
+    width: 160%;
+    height: 160%;
+    background: radial-gradient(circle at 50% 55%, rgba(255, 145, 0, 0.0), rgba(255, 80, 0, 0.0) 40%, rgba(255, 0, 0, 0.0) 70%);
+    filter: blur(1px);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: opacity 300ms ease, transform 300ms ease;
+}
+
+/* Mejoras para cada nivel de racha */
+.streak-tier-1 {
+    background: linear-gradient(135deg, #2d3748, #4a5568);
+    box-shadow: 0 5px 15px rgba(45, 55, 72, 0.3);
+}
+
+.streak-tier-1::after { 
+    opacity: 0.35; 
+    transform: scale(1.0); 
+    background: radial-gradient(circle at 50% 55%, rgba(255, 200, 0, 0.55), rgba(255, 120, 0, 0.25) 45%, rgba(255, 0, 0, 0.0) 75%); 
+}
+
+.streak-tier-2 {
+    background: linear-gradient(135deg, #4a5568, #718096);
+    box-shadow: 0 5px 15px rgba(113, 128, 150, 0.4);
+}
+
+.streak-tier-2::after { 
+    opacity: 0.55; 
+    transform: scale(1.05); 
+    background: radial-gradient(circle at 50% 55%, rgba(255, 210, 0, 0.75), rgba(255, 90, 0, 0.45) 45%, rgba(255, 0, 0, 0.05) 80%); 
+}
+
+.streak-tier-3 {
+    background: linear-gradient(135deg, #718096, #a0aec0);
+    box-shadow: 0 5px 15px rgba(160, 174, 192, 0.5);
+}
+
+.streak-tier-3::after { 
+    opacity: 0.75; 
+    transform: scale(1.12); 
+    background: radial-gradient(circle at 50% 55%, rgba(255, 230, 0, 0.95), rgba(255, 75, 0, 0.65) 45%, rgba(255, 0, 0, 0.15) 82%); 
+}
+
+.streak-tier-4 {
+    background: linear-gradient(135deg, #a0aec0, #cbd5e0);
+    box-shadow: 0 5px 15px rgba(203, 213, 224, 0.6);
+}
+
+.streak-tier-4::after { 
+    opacity: 0.92; 
+    transform: scale(1.2); 
+    background: radial-gradient(circle at 50% 55%, rgba(255, 245, 200, 0.95), rgba(255, 90, 0, 0.85) 40%, rgba(255, 0, 0, 0.25) 82%); 
+}
+
+.streak-tier-5 {
+    background: linear-gradient(135deg, #cbd5e0, #edf2f7);
+    box-shadow: 0 5px 15px rgba(237, 242, 247, 0.7);
+}
+
+.streak-tier-5::after { 
+    opacity: 1; 
+    transform: scale(1.28); 
+    background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.95), rgba(255, 140, 0, 0.95) 36%, rgba(255, 0, 80, 0.35) 82%); 
 }
 
 .xp-panel {

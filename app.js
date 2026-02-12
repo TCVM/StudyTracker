@@ -195,6 +195,12 @@ const initialData = {
 let appState = createDefaultState();
 let timerIntervalId = null;
 let lastSaveMs = 0;
+let isDarkMode = false;
+
+// DOM elements
+const pomodoroModeSelect = document.getElementById('pomodoroMode');
+const alarmModeSelect = document.getElementById('alarmMode');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
 
 // DOM
 const categoriesContainer = document.getElementById('categoriesContainer');
@@ -1295,9 +1301,184 @@ function playPing(freq = 540) {
 
 function initApp() {
     loadData();
+    loadTheme();
     difficultySelect.value = appState.meta.difficulty;
     renderAll();
     setupEventListeners();
+    setupAdditionalEventListeners();
+}
+
+// Theme management
+function loadTheme() {
+    const savedTheme = localStorage.getItem('studyTrackerTheme');
+    isDarkMode = savedTheme === 'dark';
+    applyTheme();
+}
+
+function applyTheme() {
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        themeToggleBtn.textContent = '☀️';
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeToggleBtn.textContent = '🌙';
+    }
+    localStorage.setItem('studyTrackerTheme', isDarkMode ? 'dark' : 'light');
+}
+
+function toggleTheme() {
+    isDarkMode = !isDarkMode;
+    applyTheme();
+}
+
+// Event listeners for new features
+function setupAdditionalEventListeners() {
+    // Theme toggle
+    themeToggleBtn.addEventListener('click', toggleTheme);
+    
+    // Pomodoro mode
+    pomodoroModeSelect.addEventListener('change', (e) => {
+        const pomodoroMode = e.target.value;
+        if (pomodoroMode === 'off') {
+            // Clear any active pomodoro timer
+            if (window.pomodoroIntervalId) {
+                clearInterval(window.pomodoroIntervalId);
+                window.pomodoroIntervalId = null;
+            }
+        } else {
+            // Start pomodoro timer
+            const [workMinutes, breakMinutes] = pomodoroMode.split('-').map(Number);
+            startPomodoroTimer(workMinutes * 60, breakMinutes * 60);
+        }
+    });
+    
+    // Alarm mode
+    alarmModeSelect.addEventListener('change', (e) => {
+        const alarmMode = e.target.value;
+        if (alarmMode === 'off') {
+            // Clear any active alarm
+            if (window.alarmTimeoutId) {
+                clearTimeout(window.alarmTimeoutId);
+                window.alarmTimeoutId = null;
+            }
+        } else {
+            // Set alarm
+            const [alarmMinutes] = alarmMode.split('m').map(Number);
+            setAlarm(alarmMinutes * 60);
+        }
+    });
+}
+
+// Pomodoro timer functionality
+function startPomodoroTimer(workSeconds, breakSeconds) {
+    if (window.pomodoroIntervalId) {
+        clearInterval(window.pomodoroIntervalId);
+    }
+    
+    let remainingSeconds = workSeconds;
+    let inBreak = false;
+    
+    window.pomodoroIntervalId = setInterval(() => {
+        remainingSeconds--;
+        
+        if (remainingSeconds <= 0) {
+            if (inBreak) {
+                // Break ends, start work again
+                remainingSeconds = workSeconds;
+                inBreak = false;
+                showNotification('¡Tiempo de trabajo!');
+            } else {
+                // Work ends, start break
+                remainingSeconds = breakSeconds;
+                inBreak = true;
+                showNotification('¡Tiempo de descanso!');
+            }
+            playAlarmSound();
+        }
+    }, 1000);
+}
+
+// Alarm functionality
+function setAlarm(seconds) {
+    if (window.alarmTimeoutId) {
+        clearTimeout(window.alarmTimeoutId);
+    }
+    
+    window.alarmTimeoutId = setTimeout(() => {
+        showNotification('¡La alarma ha sonado!');
+        playAlarmSound();
+    }, seconds * 1000);
+}
+
+// Alarm sound
+function playAlarmSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 440;
+        g.gain.value = 0.1;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        
+        // Beep pattern
+        const beepDuration = 200;
+        const beepInterval = 500;
+        
+        const beepSequence = [
+            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beepDuration / 1000),
+            () => g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + beepInterval / 1000),
+            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (beepInterval + beepDuration) / 1000),
+            () => g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + (beepInterval * 2) / 1000),
+            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (beepInterval * 2 + beepDuration) / 1000)
+        ];
+        
+        beepSequence.forEach((beep, index) => {
+            setTimeout(() => beep(), index * beepInterval);
+        });
+        
+        o.stop(ctx.currentTime + 2.5);
+        o.onended = () => ctx.close();
+    } catch (e) {
+        console.error('Error playing alarm:', e);
+    }
+}
+
+// Add new achievements for dark mode, pomodoro, and alarm
+function initAchievements() {
+    const newAchievements = [
+        // Dark Mode achievements
+        { id: 'dark_mode_master', title: 'Maestro del Oscuro', desc: 'Activar el modo nocturno 10 veces', kind: 'special', condition: 'dark_mode_10_times' },
+        { id: 'night_owl', title: 'Búho Nocturno', desc: 'Estudiar 5 sesiones en modo nocturno', kind: 'special', condition: '5_sessions_dark_mode' },
+        
+        // Pomodoro achievements
+        { id: 'pomodoro_beginner', title: 'Principiante Pomodoro', desc: 'Completar 5 ciclos pomodoro', kind: 'special', condition: '5_pomodoro_cycles' },
+        { id: 'pomodoro_pro', title: 'Pomodoro Profesional', desc: 'Completar 25 ciclos pomodoro', kind: 'special', condition: '25_pomodoro_cycles' },
+        { id: 'pomodoro_expert', title: 'Experto Pomodoro', desc: 'Completar 50 ciclos pomodoro', kind: 'special', condition: '50_pomodoro_cycles' },
+        
+        // Alarm achievements
+        { id: 'alarm_user', title: 'Uso de Alarma', desc: 'Usar la alarma 5 veces', kind: 'special', condition: '5_alarm_uses' },
+        { id: 'alarm_master', title: 'Maestro de Alarmas', desc: 'Usar la alarma 20 veces', kind: 'special', condition: '20_alarm_uses' },
+        
+        // Consistency achievements
+        { id: 'consistent_streak', title: 'Racha Consistente', desc: 'Estudiar 5 días consecutivos', kind: 'time', condition: '5_days_streak' },
+        { id: 'long_streak', title: 'Racha Larga', desc: 'Estudiar 10 días consecutivos', kind: 'time', condition: '10_days_streak' },
+        
+        // Topic achievements
+        { id: 'quick_learner', title: 'Aprendiz Rápido', desc: 'Completar 10 temas en un solo día', kind: 'progress', condition: '10_topics_day' },
+        { id: 'deep_learner', title: 'Aprendiz Profundo', desc: 'Completar un tema de nivel 3', kind: 'topic', condition: 'complete_level_3_topic' }
+    ];
+    
+    // Add new achievements to existing ones
+    ACHIEVEMENTS.push(...newAchievements);
+    
+    // Save to localStorage
+    const existingAchievements = JSON.parse(localStorage.getItem('studyTrackerAchievements') || '[]');
+    const allAchievements = [...existingAchievements, ...newAchievements];
+    
+    localStorage.setItem('studyTrackerAchievements', JSON.stringify(allAchievements));
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
