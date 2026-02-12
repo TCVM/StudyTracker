@@ -69,31 +69,12 @@ const ACHIEVEMENTS = [
 ];
 
 const SKILLS = [
-    {
-        id: 'skill_xp_boost_1',
-        title: 'XP +10%',
-        desc: 'Ganas 10% más XP (timer + tareas).',
-        cost: 1,
-        reqLevel: 2
-    },
-    {
-        id: 'skill_multiplier_cap',
-        title: 'Combo estable',
-        desc: '+1 tier máximo de racha (más multiplicador).',
-        cost: 1,
-        reqLevel: 4
-    },
-    {
-        id: 'skill_review_bonus',
-        title: 'Memoria reforzada',
-        desc: '+25% XP por repasos espaciados.',
-        cost: 1,
-        reqLevel: 3
-    }
+    { id: 'skill_xp_boost_1', title: 'XP +10%', desc: 'Ganas 10% más XP (timer + tareas).', cost: 1, reqLevel: 2 },
+    { id: 'skill_multiplier_cap', title: 'Combo estable', desc: '+1 tier máximo de racha (más multiplicador).', cost: 1, reqLevel: 4 },
+    { id: 'skill_review_bonus', title: 'Memoria reforzada', desc: '+25% XP por repasos espaciados.', cost: 1, reqLevel: 3 }
 ];
 
-// Datos iniciales del plan de estudios: Arquitectura y Organización de Computadoras (con jerarquía)
-const initialData = {
+const initialArchitectureData = {
     categories: [
         {
             id: 1,
@@ -188,6 +169,98 @@ const initialData = {
                 { name: 'Desplazamiento', level: 2 },
                 { name: 'Pila', level: 2 }
             ]
+        },
+        {
+            id: 4,
+            name: 'Control de E/S y Buses',
+            icon: '🔌',
+            topics: [
+                { name: 'Bus del Sistema', level: 1 },
+                { name: 'Bus de Datos (Anchura)', level: 2 },
+                { name: 'Bus de Dirección (Máx. Capacidad de Memoria)', level: 2 },
+                { name: 'Bus de Control (Ordenes, Temporización)', level: 2 },
+                { name: 'Sincronización (Síncrono vs Asíncrono)', level: 2 },
+                { name: 'Módulos de E/S', level: 1 },
+                { name: 'Funciones (Control, Comunicación CPU/Memoria, Buffering)', level: 2 },
+                { name: 'Acceso a E/S', level: 2 },
+                { name: 'E/S Asignada en Memoria (Memory-Mapped)', level: 3 },
+                { name: 'E/S Aislada (Separada de Memoria)', level: 3 },
+                { name: 'Técnicas de Gestión de E/S', level: 1 },
+                { name: 'E/S Programada (CPU Ociosa, Comprobación Periódica)', level: 2 },
+                { name: 'E/S con Interrupciones (CPU Continúa Procesando)', level: 2 },
+                { name: 'Acceso Directo a Memoria (DMA)', level: 2 },
+                { name: 'Controlador DMA (DMAC)', level: 3 },
+                { name: 'Modo Ráfaga (Burst)', level: 3 },
+                { name: 'Modo Robo de Ciclo (Cycle-Stealling)', level: 3 },
+                { name: 'Canales de E/S (Selector/Multiplexor)', level: 3 },
+                { name: 'Interrupciones', level: 1 },
+                { name: 'Tipos (Hardware, Software, Traps/Excepciones)', level: 2 },
+                { name: 'Pasos del Gestor (Salvar Estado, Tratar Causa, Restaurar Estado)', level: 2 },
+                { name: 'Prioridades (Múltiples Interrupciones)', level: 2 },
+                { name: 'Controlador PIC (Gestión Externa, Vectorizado)', level: 2 },
+                { name: 'Vector de Interrupciones (Direcciones de Rutinas)', level: 2 }
+            ]
+        },
+        {
+            id: 5,
+            name: 'Segmentación y Paralelismo (Pipeline)',
+            icon: '⚡',
+            topics: [
+                { name: 'Ciclo de Instrucción Segmentado (nanoMIPS)', level: 1 },
+                { name: 'Fase F (Búsqueda de Instrucción/MI)', level: 2 },
+                { name: 'Fase D (Decodificación/Acceso a Registros)', level: 2 },
+                { name: 'Fase X (Ejecución/ALU)', level: 2 },
+                { name: 'Fase M (Acceso a Memoria/MD)', level: 2 },
+                { name: 'Fase W (Escritura en Registro/Writeback)', level: 2 },
+                { name: 'Riesgos (Stalls)', level: 1 },
+                { name: 'Riesgos Estructurales', level: 2 },
+                { name: 'Causa: Conflicto por Recursos Compartidos', level: 3 },
+                { name: 'Solución: Duplicación de Recursos (MI/MD), Turnos', level: 3 },
+                { name: 'Dependencia de Datos', level: 2 },
+                { name: 'RAW (Read After Write)', level: 3 },
+                { name: 'WAR (Write After Read, Anti-Dependencia)', level: 3 },
+                { name: 'WAW (Write After Write, Salida)', level: 3 },
+                { name: 'Solución Hardware: Adelantamiento (Forwarding)', level: 3 },
+                { name: 'Solución Software: NOP o Reordenación de Código', level: 3 },
+                { name: 'Dependencia de Control', level: 2 },
+                { name: 'Causa: Instrucciones de Salto', level: 3 },
+                { name: 'Solución: Predicción de Saltos (Estática/Dinámica)', level: 3 },
+                { name: 'Solución: Salto Retardado (NOP/Reordenación)', level: 3 },
+                { name: 'Técnicas de Aceleración', level: 1 },
+                { name: 'Supersegmentación (Más Etapas, Ciclo de Reloj Rápido)', level: 2 },
+                { name: 'Superescalar', level: 2 },
+                { name: 'Multiples Cauces Independientes', level: 3 },
+                { name: 'Emisión Multiple de Instrucciones', level: 3 },
+                { name: 'Ventana de Instrucciones', level: 3 },
+                { name: 'Renombramiento de Registros (Elimina WAR/WAW)', level: 3 },
+                { name: 'Planificación Dinámica Distribuida (Tomasulo)', level: 2 },
+                { name: 'Estaciones de Reserva', level: 3 },
+                { name: 'Common Data Bus (CDB)', level: 3 },
+                { name: 'Ejecución Fuera de Orden', level: 3 }
+            ]
+        },
+        {
+            id: 6,
+            name: 'Sistemas de Múltiples Procesadores',
+            icon: '🔄',
+            topics: [
+                { name: 'Taxonomía de Flynn (MIMD)', level: 1 },
+                { name: 'Memoria Compartida (Fuertemente Acoplada)', level: 2 },
+                { name: 'SMP (Acceso Uniforme - UMA)', level: 3 },
+                { name: 'NUMA (Acceso No Uniforme)', level: 3 },
+                { name: 'Problemas: Coherencia de Caché, Sincronización', level: 3 },
+                { name: 'Memoria Distribuida (Débilmente Acoplada)', level: 2 },
+                { name: 'Clusters (Nodos Completos)', level: 3 },
+                { name: 'Comunicación: Paso de Mensajes (Send/Receive)', level: 3 },
+                { name: 'Coherencia de Caché (MP)', level: 1 },
+                { name: 'Protocolos de Sondeo (Snoopy)', level: 2 },
+                { name: 'Protocolos Basados en Invalidación', level: 2 },
+                { name: 'Protocolo MESI (Modified, Exclusive, Shared, Invalid)', level: 3 },
+                { name: 'Protocolos de Actualización', level: 2 },
+                { name: 'Procesamiento Multihebra (Multithreading)', level: 1 },
+                { name: 'Explotación de Paralelismo a Nivel de Hilo (TLP)', level: 2 },
+                { name: 'Hilos (Threads) vs Procesos', level: 2 }
+            ]
         }
     ]
 };
@@ -196,16 +269,15 @@ let appState = createDefaultState();
 let timerIntervalId = null;
 let lastSaveMs = 0;
 let isDarkMode = false;
+let currentSubject = null;
 
-// DOM elements
 const pomodoroModeSelect = document.getElementById('pomodoroMode');
 const alarmModeSelect = document.getElementById('alarmMode');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 
-// DOM
 const categoriesContainer = document.getElementById('categoriesContainer');
-const globalPercentage = document.getElementById('globalPercentage');
-const globalProgress = document.getElementById('globalProgress');
+const subjectPercentage = document.getElementById('subjectPercentage');
+const subjectProgress = document.getElementById('subjectProgress');
 const saveBtn = document.getElementById('saveBtn');
 const resetBtn = document.getElementById('resetBtn');
 
@@ -231,11 +303,56 @@ const statsContainer = document.getElementById('statsContainer');
 const achievementsContainer = document.getElementById('achievementsContainer');
 const sessionsContainer = document.getElementById('sessionsContainer');
 
+const subjectList = document.getElementById('subjectList');
+const addSubjectBtn = document.getElementById('addSubjectBtn');
+const addSubjectModal = document.getElementById('addSubjectModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const cancelModalBtn = document.getElementById('cancelModalBtn');
+const confirmAddSubjectBtn = document.getElementById('confirmAddSubjectBtn');
+const subjectNameInput = document.getElementById('subjectName');
+const subjectIconInput = document.getElementById('subjectIcon');
+const subjectColorInput = document.getElementById('subjectColor');
+const subjectTitle = document.getElementById('subjectTitle');
+const subjectSubtitle = document.getElementById('subjectSubtitle');
+const editSubjectBtn = document.getElementById('editSubjectBtn');
+const deleteSubjectBtn = document.getElementById('deleteSubjectBtn');
+
+const totalSubjectsEl = document.getElementById('totalSubjects');
+const totalTimeEl = document.getElementById('totalTime');
+const totalAchievementsEl = document.getElementById('totalAchievements');
+const globalProgressEl = document.getElementById('globalProgress');
+const recentSubjectsGrid = document.getElementById('recentSubjectsGrid');
+const quickAddSubject = document.getElementById('quickAddSubject');
+const quickStartSession = document.getElementById('quickStartSession');
+const quickViewStats = document.getElementById('quickViewStats');
+
 const MAX_SESSIONS_DISPLAY = 20;
 
 function createDefaultState() {
     return {
         version: APP_VERSION,
+        subjects: [],
+        globalMeta: {
+            xp: 0,
+            level: 1,
+            skillPoints: 0,
+            unlockedSkills: [],
+            achievements: {},
+            totalFocusSeconds: 0,
+            sessionsCount: 0,
+            longestSessionSeconds: 0,
+            dailyFocusSeconds: {},
+            sessions: []
+        }
+    };
+}
+
+function createSubject(id, name, icon, color) {
+    return {
+        id: id,
+        name: name,
+        icon: icon,
+        color: color,
         categories: [],
         meta: {
             difficulty: 'normal',
@@ -262,8 +379,9 @@ function createDefaultState() {
     };
 }
 
-function createCategoriesFromInitialData() {
-    return initialData.categories.map(category => ({
+function createSubjectFromInitialData() {
+    const subject = createSubject(1, 'Arquitectura y Organización de Computadoras', '💻', '#667eea');
+    subject.categories = initialArchitectureData.categories.map(category => ({
         ...category,
         topics: category.topics.map(topic => ({
             name: topic.name,
@@ -273,19 +391,20 @@ function createCategoriesFromInitialData() {
             reviews: []
         }))
     }));
+    return subject;
 }
 
 function normalizeLoadedState(loaded) {
     const base = createDefaultState();
 
     if (!loaded || typeof loaded !== 'object') {
-        base.categories = createCategoriesFromInitialData();
+        base.subjects.push(createSubjectFromInitialData());
         return base;
     }
 
-    // V1 shape: { categories: [{topics:[{name,completed}]}] }
     if (!loaded.version && Array.isArray(loaded.categories) && loaded.categories.length) {
-        base.categories = loaded.categories.map(category => ({
+        const subject = createSubject(1, 'Arquitectura y Organización de Computadoras', '💻', '#667eea');
+        subject.categories = loaded.categories.map(category => ({
             id: category.id,
             name: category.name,
             icon: category.icon,
@@ -297,41 +416,46 @@ function normalizeLoadedState(loaded) {
                 reviews: Array.isArray(t.reviews) ? t.reviews : []
             }))
         }));
+        base.subjects.push(subject);
         return base;
     }
 
     const merged = {
         ...base,
         ...loaded,
-        meta: {
-            ...base.meta,
-            ...(loaded.meta || {}),
-            timer: {
-                ...base.meta.timer,
-                ...((loaded.meta && loaded.meta.timer) ? loaded.meta.timer : {}),
-                running: false,
-                lastTickMs: null
-            }
+        globalMeta: {
+            ...base.globalMeta,
+            ...(loaded.globalMeta || {})
         }
     };
 
-    if (!Array.isArray(merged.categories) || merged.categories.length === 0) {
-        merged.categories = createCategoriesFromInitialData();
+    if (!Array.isArray(merged.subjects) || merged.subjects.length === 0) {
+        merged.subjects.push(createSubjectFromInitialData());
     } else {
-        merged.categories = merged.categories.map(category => ({
-            ...category,
-            topics: (category.topics || []).map(t => ({
-                name: t.name,
-                level: t.level ?? 1,
-                completed: !!t.completed,
-                completedAt: t.completedAt ?? (t.completed ? Date.now() : null),
-                reviews: Array.isArray(t.reviews) ? t.reviews : []
-            }))
+        merged.subjects = merged.subjects.map(subject => ({
+            ...createSubject(subject.id || Date.now(), subject.name || 'Materia', subject.icon || '📚', subject.color || '#667eea'),
+            ...subject,
+            categories: (subject.categories || []).map(category => ({
+                ...category,
+                topics: (category.topics || []).map(t => ({
+                    name: t.name,
+                    level: t.level ?? 1,
+                    completed: !!t.completed,
+                    completedAt: t.completedAt ?? (t.completed ? Date.now() : null),
+                    reviews: Array.isArray(t.reviews) ? t.reviews : []
+                }))
+            })),
+            meta: {
+                ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta,
+                ...(subject.meta || {}),
+                timer: {
+                    ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta.timer,
+                    ...((subject.meta && subject.meta.timer) ? subject.meta.timer : {}),
+                    running: false,
+                    lastTickMs: null
+                }
+            }
         }));
-    }
-
-    if (!DIFFICULTY_CONFIG[merged.meta.difficulty]) {
-        merged.meta.difficulty = 'normal';
     }
 
     return merged;
@@ -346,41 +470,60 @@ function safeJsonParse(text) {
 }
 
 function loadData() {
+    // Intentar cargar datos existentes primero
     const savedV2 = localStorage.getItem(STORAGE_KEY_V2);
     if (savedV2) {
-        appState = normalizeLoadedState(safeJsonParse(savedV2));
-        return;
+        try {
+            const loaded = JSON.parse(savedV2);
+            appState = normalizeLoadedState(loaded);
+            console.log('✓ Datos cargados desde localStorage V2');
+            return;
+        } catch (e) {
+            console.error('✗ Error al parsear datos V2:', e);
+        }
     }
 
+    // Si no hay datos V2, intentar V1
     const savedV1 = localStorage.getItem(STORAGE_KEY_V1);
     if (savedV1) {
-        appState = normalizeLoadedState(safeJsonParse(savedV1));
-        saveData(true);
-        return;
+        try {
+            const loaded = JSON.parse(savedV1);
+            appState = normalizeLoadedState(loaded);
+            console.log('✓ Datos cargados desde localStorage V1');
+            return;
+        } catch (e) {
+            console.error('✗ Error al parsear datos V1:', e);
+        }
     }
 
+    // Si no hay datos guardados, crear estado por defecto
+    console.log('Creando novo estado por defecto con datos iniciales');
     appState = createDefaultState();
-    appState.categories = createCategoriesFromInitialData();
+    const subject = createSubjectFromInitialData();
+    appState.subjects.push(subject);
+    console.log('appState después de agregar materia:', appState);
 }
 
 function saveData(force = false) {
     const now = Date.now();
     if (!force && now - lastSaveMs < 1500) return;
     lastSaveMs = now;
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(appState));
+    try {
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(appState));
+        console.log('✓ Progreso guardado automáticamente', new Date().toLocaleTimeString());
+    } catch (e) {
+        console.error('✗ Error al guardar progreso:', e);
+    }
 }
 
 function resetData() {
     if (!confirm('¿Reiniciar todo? (temas, XP, logros, stats y rachas)')) return;
     appState = createDefaultState();
-    appState.categories = createCategoriesFromInitialData();
+    appState.subjects.push(createSubjectFromInitialData());
     saveData(true);
+    currentSubject = null;
     renderAll();
     showNotification('Progreso reiniciado.');
-}
-
-function getDifficulty() {
-    return DIFFICULTY_CONFIG[appState.meta.difficulty] ?? DIFFICULTY_CONFIG.normal;
 }
 
 function todayKey() {
@@ -406,318 +549,32 @@ function formatMS(totalSeconds) {
     return `${mm}:${ss}`;
 }
 
-function getMaxTier() {
-    const hasCapSkill = appState.meta.unlockedSkills.includes('skill_multiplier_cap');
-    return hasCapSkill ? 6 : 5;
-}
-
-function getStreakTier(streakSeconds) {
-    const cfg = getDifficulty();
-    const minutes = streakSeconds / 60;
-    let tier = 0;
-    for (let i = 0; i < cfg.tierMinutes.length; i++) {
-        if (minutes >= cfg.tierMinutes[i]) tier = i;
-    }
-    return Math.min(tier, getMaxTier());
-}
-
 function round2(n) {
     return Math.round(n * 100) / 100;
-}
-
-function getMultiplier() {
-    const cfg = getDifficulty();
-    const tier = getStreakTier(appState.meta.timer.streakSeconds);
-    const base = 1 + tier * cfg.tierMultiplierStep;
-    return round2(base);
-}
-
-function getXpBoostMultiplier() {
-    return appState.meta.unlockedSkills.includes('skill_xp_boost_1') ? 1.1 : 1;
-}
-
-function getReviewBonusMultiplier() {
-    return appState.meta.unlockedSkills.includes('skill_review_bonus') ? 1.25 : 1;
 }
 
 function xpToNextLevel(level) {
     return Math.floor(120 + (level - 1) * 55 + (level - 1) * (level - 1) * 4);
 }
 
-function addXp(amount, { notify = false, label = '' } = {}) {
-    if (!Number.isFinite(amount) || amount <= 0) return;
-
-    const boosted = Math.floor(amount * getXpBoostMultiplier());
-    appState.meta.xp += boosted;
-
-    let leveledUp = false;
-    while (appState.meta.xp >= xpToNextLevel(appState.meta.level)) {
-        appState.meta.xp -= xpToNextLevel(appState.meta.level);
-        appState.meta.level += 1;
-        appState.meta.skillPoints += 1;
-        leveledUp = true;
-    }
-
-    if (notify) {
-        showNotification(label ? `+${boosted} XP · ${label}` : `+${boosted} XP`);
-        particleBurst(document.body, '#48bb78');
-        playPing(leveledUp ? 720 : 540);
-    } else if (leveledUp) {
-        showNotification(`¡Nivel ${appState.meta.level}! (+1 SP)`);
-        particleBurst(document.body, '#667eea');
-        playPing(720);
-    }
-
-    updateXpUi();
-    saveData();
-}
-
-function unlockAchievement(achievementId) {
-    if (appState.meta.achievements[achievementId]) return false;
-    appState.meta.achievements[achievementId] = Date.now();
-    saveData();
-
-    const a = ACHIEVEMENTS.find(x => x.id === achievementId);
-    if (a) {
-        showNotification(`Logro: ${a.title}`);
-        particleBurst(document.body, '#ed8936');
-        playPing(640);
-    }
-
-    renderAchievements();
-    return true;
-}
-
-function checkAchievements() {
-    const total = appState.meta.totalFocusSeconds;
-    const streak = appState.meta.timer.streakSeconds;
-    
-    // Obtener estadísticas para verificar logros
-    let totalTopics = 0;
-    let completedTopics = 0;
-    for (const category of appState.categories) {
-        totalTopics += category.topics.length;
-        completedTopics += category.topics.filter(t => t.completed).length;
-    }
-    const completionPercentage = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
-    
-    const unlockedAchievementsCount = Object.keys(appState.meta.achievements).length;
-    const sessionsCount = appState.meta.sessionsCount;
-    const totalXp = appState.meta.xp;
-    
-    // Verificar logros por cada tipo
-    for (const a of ACHIEVEMENTS) {
-        if (appState.meta.achievements[a.id]) continue;
-        
-        // Logros originales (total y streak)
-        if (a.kind === 'total' && total >= a.seconds) {
-            unlockAchievement(a.id);
-            continue;
-        }
-        if (a.kind === 'streak' && streak >= a.seconds) {
-            unlockAchievement(a.id);
-            continue;
-        }
-        
-        // Logros de Progreso Académico
-        if (a.kind === 'progress') {
-            if (a.condition === 'first_topic' && completedTopics >= 1) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '25_percent' && completionPercentage >= 25) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '50_percent' && completionPercentage >= 50) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '75_percent' && completionPercentage >= 75) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '100_percent' && completionPercentage >= 100) {
-                unlockAchievement(a.id);
-            }
-            continue;
-        }
-        
-        // Logros de Temas específicos
-        if (a.kind === 'topic') {
-            let categoryCompleted = false;
-            if (a.condition === 'complete_architecture') {
-                const architectureCategory = appState.categories.find(c => c.name.includes('Estructura del Computador'));
-                categoryCompleted = architectureCategory && architectureCategory.topics.every(t => t.completed);
-            } else if (a.condition === 'complete_memory') {
-                const memoryCategory = appState.categories.find(c => c.name.includes('Jerarquía de Memoria'));
-                categoryCompleted = memoryCategory && memoryCategory.topics.every(t => t.completed);
-            } else if (a.condition === 'complete_instructions') {
-                const instructionsCategory = appState.categories.find(c => c.name.includes('Repertorio de Instrucciones'));
-                categoryCompleted = instructionsCategory && instructionsCategory.topics.every(t => t.completed);
-            }
-            
-            if (categoryCompleted) {
-                unlockAchievement(a.id);
-            }
-            continue;
-        }
-        
-        // Logros Especiales
-        if (a.kind === 'special') {
-            if (a.condition === 'first_10_xp' && totalXp >= 10) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '5_achievements' && unlockedAchievementsCount >= 5) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '15_achievements' && unlockedAchievementsCount >= 15) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '10_sessions' && sessionsCount >= 10) {
-                unlockAchievement(a.id);
-            } else if (a.condition === '50_sessions' && sessionsCount >= 50) {
-                unlockAchievement(a.id);
-            }
-            continue;
-        }
-        
-        // Logros de Tiempo (horario y consistencia)
-        if (a.kind === 'time') {
-            const now = new Date();
-            const currentHour = now.getHours();
-            
-            // Logros de horario (se verifican solo si el timer está corriendo)
-            if (appState.meta.timer.running) {
-                if (a.condition === 'before_8am' && currentHour < 8) {
-                    unlockAchievement(a.id);
-                } else if (a.condition === 'after_10pm' && currentHour >= 22) {
-                    unlockAchievement(a.id);
-                }
-            }
-            
-            // Logros de consistencia (días consecutivos)
-            if (a.condition === '3_days_streak' || a.condition === '7_days_streak' || a.condition === '20_days_month') {
-                const activeDays = new Set();
-                const today = todayKey();
-                const todayDate = new Date(today);
-                
-                // Obtener días con actividad
-                for (const dateKey in appState.meta.dailyFocusSeconds) {
-                    if (appState.meta.dailyFocusSeconds[dateKey] > 0) {
-                        activeDays.add(dateKey);
-                    }
-                }
-                
-                // Verificar 20+ días en el mes actual
-                if (a.condition === '20_days_month') {
-                    const currentMonth = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
-                    const daysInMonth = Array.from(activeDays).filter(dateKey => dateKey.startsWith(currentMonth)).length;
-                    if (daysInMonth >= 20) {
-                        unlockAchievement(a.id);
-                    }
-                }
-                
-                // Verificar días consecutivos
-                if (a.condition === '3_days_streak' || a.condition === '7_days_streak') {
-                    const targetStreak = a.condition === '3_days_streak' ? 3 : 7;
-                    let consecutiveDays = 0;
-                    const checkDate = new Date(todayDate);
-                    
-                    for (let i = 0; i < targetStreak; i++) {
-                        const checkKey = formatDateKey(checkDate);
-                        if (activeDays.has(checkKey)) {
-                            consecutiveDays++;
-                        } else {
-                            break;
-                        }
-                        checkDate.setDate(checkDate.getDate() - 1);
-                    }
-                    
-                    if (consecutiveDays >= targetStreak) {
-                        unlockAchievement(a.id);
-                    }
-                }
-            }
-        }
-    }
-}
-
-function formatDateKey(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-function ensureReviews(topic) {
-    if (Array.isArray(topic.reviews) && topic.reviews.length) return;
-    if (!topic.completedAt) return;
-
-    const base = topic.completedAt;
-    topic.reviews = REVIEW_SCHEDULE_DAYS.map(days => ({
-        dueAt: base + days * 24 * 60 * 60 * 1000,
-        doneAt: null
-    }));
-}
-
-function getDueReview(topic) {
-    if (!topic.completed) return null;
-    ensureReviews(topic);
-    const now = Date.now();
-    return topic.reviews.find(r => !r.doneAt && r.dueAt <= now) ?? null;
-}
-
-function completeDueReview(categoryId, topicIndex) {
-    const category = appState.categories.find(c => c.id === categoryId);
-    if (!category) return;
-    const topic = category.topics[topicIndex];
-    if (!topic) return;
-
-    const due = getDueReview(topic);
-    if (!due) return;
-    due.doneAt = Date.now();
-
-    const cfg = getDifficulty();
-    const mult = getMultiplier();
-    const base = Math.floor(cfg.xpReviewComplete * mult * getReviewBonusMultiplier());
-    addXp(base, { notify: true, label: 'Repaso' });
-
-    saveData();
-    renderAllNonTimer();
-}
-
-function toggleTopicCompleted(categoryId, topicIndex) {
-    const category = appState.categories.find(c => c.id === categoryId);
-    if (!category) return;
-    const topic = category.topics[topicIndex];
-    if (!topic) return;
-
-    const now = Date.now();
-    const wasCompleted = !!topic.completed;
-    topic.completed = !topic.completed;
-
-    if (topic.completed) {
-        topic.completedAt = now;
-        topic.reviews = [];
-        ensureReviews(topic);
-
-        const cfg = getDifficulty();
-        const mult = getMultiplier();
-        addXp(Math.floor(cfg.xpTopicComplete * mult), { notify: true, label: 'Tema' });
-    } else {
-        topic.completedAt = null;
-        topic.reviews = [];
-        saveData();
-    }
-
-    if (wasCompleted !== topic.completed) {
-        renderAllNonTimer();
-    }
-}
-
 function escapeHtml(text) {
     return String(text)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
+        .replaceAll('&', '&')
+        .replaceAll('<', '<')
+        .replaceAll('>', '>')
+        .replaceAll('"', '"')
         .replaceAll("'", '&#039;');
 }
 
 function renderCategories() {
+    if (!currentSubject) {
+        categoriesContainer.innerHTML = '';
+        return;
+    }
+
     categoriesContainer.innerHTML = '';
 
-    for (const category of appState.categories) {
+    for (const category of currentSubject.categories) {
         const card = document.createElement('div');
         card.className = 'category-card';
 
@@ -745,8 +602,6 @@ function renderCategories() {
 
             <ul class="topics-list" id="topics-${category.id}">
                 ${category.topics.map((topic, topicIndex) => {
-                    const due = getDueReview(topic);
-                    const badges = due ? `<div class="topic-badges"><button class="topic-badge" type="button" data-action="review" data-category-id="${category.id}" data-topic-index="${topicIndex}">Repasar</button></div>` : '';
                     const id = `topic-${category.id}-${topicIndex}`;
                     return `
                         <li class="topic-item ${topic.completed ? 'completed' : ''}"
@@ -756,7 +611,6 @@ function renderCategories() {
                             style="padding-left: ${(topic.level - 1) * 20}px">
                             <div class="topic-checkbox"></div>
                             <div class="topic-name">${escapeHtml(topic.name)}</div>
-                            ${badges}
                         </li>
                     `;
                 }).join('')}
@@ -767,34 +621,38 @@ function renderCategories() {
     }
 }
 
-function updateGlobalProgress() {
+function updateSubjectProgress() {
+    if (!currentSubject) {
+        subjectPercentage.textContent = '0%';
+        subjectProgress.style.width = '0%';
+        return;
+    }
+
     let totalTopics = 0;
     let completedTopics = 0;
 
-    for (const category of appState.categories) {
+    for (const category of currentSubject.categories) {
         totalTopics += category.topics.length;
         completedTopics += category.topics.filter(t => t.completed).length;
     }
 
-    const globalProgressPct = totalTopics ? Math.round((completedTopics / totalTopics) * 100) : 0;
-    globalPercentage.textContent = `${globalProgressPct}%`;
-    globalProgress.style.width = `${globalProgressPct}%`;
-}
-
-function flashElement(el) {
-    el.style.transition = 'box-shadow 220ms ease';
-    el.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.25)';
-    setTimeout(() => { el.style.boxShadow = ''; }, 700);
+    const subjectProgressPct = totalTopics ? Math.round((completedTopics / totalTopics) * 100) : 0;
+    subjectPercentage.textContent = `${subjectProgressPct}%`;
+    subjectProgress.style.width = `${subjectProgressPct}%`;
 }
 
 function renderMap() {
+    if (!currentSubject) {
+        mapContainer.innerHTML = '';
+        return;
+    }
+
     mapContainer.innerHTML = '';
 
-    for (const category of appState.categories) {
+    for (const category of currentSubject.categories) {
         for (let i = 0; i < category.topics.length; i++) {
             const topic = category.topics[i];
-            const due = getDueReview(topic);
-            const status = topic.completed ? (due ? 'due' : 'done') : 'pending';
+            const status = topic.completed ? 'done' : 'pending';
 
             const marker = document.createElement('button');
             marker.type = 'button';
@@ -809,7 +667,6 @@ function renderMap() {
                 const el = document.getElementById(`topic-${category.id}-${i}`);
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    flashElement(el);
                 }
             });
 
@@ -819,11 +676,16 @@ function renderMap() {
 }
 
 function renderSkillTree() {
+    if (!currentSubject) {
+        skillTreeContainer.innerHTML = '';
+        return;
+    }
+
     skillTreeContainer.innerHTML = '';
 
     for (const skill of SKILLS) {
-        const unlocked = appState.meta.unlockedSkills.includes(skill.id);
-        const canUnlock = !unlocked && appState.meta.skillPoints >= skill.cost && appState.meta.level >= skill.reqLevel;
+        const unlocked = currentSubject.meta.unlockedSkills.includes(skill.id);
+        const canUnlock = !unlocked && currentSubject.meta.skillPoints >= skill.cost && currentSubject.meta.level >= skill.reqLevel;
 
         const card = document.createElement('div');
         card.className = `card ${unlocked ? '' : 'locked'}`;
@@ -846,30 +708,20 @@ function renderSkillTree() {
 }
 
 function unlockSkill(skillId) {
+    if (!currentSubject) return;
+    
     const skill = SKILLS.find(s => s.id === skillId);
     if (!skill) return;
-    if (appState.meta.unlockedSkills.includes(skillId)) return;
-    if (appState.meta.level < skill.reqLevel) return;
-    if (appState.meta.skillPoints < skill.cost) return;
+    if (currentSubject.meta.unlockedSkills.includes(skillId)) return;
+    if (currentSubject.meta.level < skill.reqLevel) return;
+    if (currentSubject.meta.skillPoints < skill.cost) return;
 
-    appState.meta.skillPoints -= skill.cost;
-    appState.meta.unlockedSkills.push(skillId);
+    currentSubject.meta.skillPoints -= skill.cost;
+    currentSubject.meta.unlockedSkills.push(skillId);
     saveData(true);
     renderSkillTree();
     updateXpUi();
     showNotification(`Habilidad desbloqueada: ${skill.title}`);
-    particleBurst(document.body, '#667eea');
-    playPing(690);
-}
-
-function countDueReviews() {
-    let count = 0;
-    for (const category of appState.categories) {
-        for (const topic of category.topics) {
-            if (getDueReview(topic)) count += 1;
-        }
-    }
-    return count;
 }
 
 function prettyTime(seconds) {
@@ -881,16 +733,20 @@ function prettyTime(seconds) {
 }
 
 function renderStats() {
+    if (!currentSubject) {
+        statsContainer.innerHTML = '';
+        return;
+    }
+
     const today = todayKey();
-    const focusTodaySeconds = appState.meta.dailyFocusSeconds[today] ?? 0;
-    const dueReviews = countDueReviews();
+    const focusTodaySeconds = currentSubject.meta.dailyFocusSeconds[today] ?? 0;
 
     const items = [
-        { title: 'Tiempo total', value: prettyTime(appState.meta.totalFocusSeconds) },
+        { title: 'Tiempo total', value: prettyTime(currentSubject.meta.totalFocusSeconds) },
         { title: 'Hoy', value: prettyTime(focusTodaySeconds) },
-        { title: 'Sesiones', value: String(appState.meta.sessionsCount) },
-        { title: 'Mejor sesión', value: prettyTime(appState.meta.longestSessionSeconds) },
-        { title: 'Repasos pendientes', value: String(dueReviews) }
+        { title: 'Sesiones', value: String(currentSubject.meta.sessionsCount) },
+        { title: 'Mejor sesión', value: prettyTime(currentSubject.meta.longestSessionSeconds) },
+        { title: 'Repasos pendientes', value: '0' }
     ];
 
     statsContainer.innerHTML = items.map(x => `
@@ -903,11 +759,72 @@ function renderStats() {
     focusTodayText.textContent = `Hoy: ${Math.floor(focusTodaySeconds / 60)}m`;
 }
 
+function checkAchievements() {
+    if (!currentSubject) return;
+
+    // Contar temas completados para logros basados en progreso
+    let totalTopics = 0;
+    let completedTopics = 0;
+    
+    for (const category of currentSubject.categories) {
+        totalTopics += category.topics.length;
+        completedTopics += category.topics.filter(t => t.completed).length;
+    }
+    
+    const completionPercentage = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+    const totalFocus = currentSubject.meta.totalFocusSeconds;
+    const achievements = [
+        { id: 'first_topic', condition: () => completedTopics >= 1 },
+        { id: '25_percent', condition: () => completionPercentage >= 25 },
+        { id: '50_percent', condition: () => completionPercentage >= 50 },
+        { id: '75_percent', condition: () => completionPercentage >= 75 },
+        { id: '100_percent', condition: () => completionPercentage >= 100 },
+        { id: 'focus_30min', condition: () => totalFocus >= 30 * 60 },
+        { id: 'focus_1h', condition: () => totalFocus >= 60 * 60 },
+        { id: 'focus_5h', condition: () => totalFocus >= 5 * 60 * 60 },
+        { id: 'focus_10h', condition: () => totalFocus >= 10 * 60 * 60 }
+    ];
+    
+    for (const ach of achievements) {
+        if (!currentSubject.meta.achievements[ach.id] && ach.condition()) {
+            currentSubject.meta.achievements[ach.id] = Date.now();
+            const achievementInfo = ACHIEVEMENTS.find(a => a.id.includes(ach.id));
+            if (achievementInfo) {
+                showNotification(`🏆 Logro: ${achievementInfo.title}`);
+            }
+        }
+    }
+    
+    // También actualizar logros globales
+    const unlockedCount = Object.keys(appState.globalMeta.achievements).length;
+    const sessionsCount = appState.globalMeta.sessionsCount;
+    const globalTotalFocus = appState.globalMeta.totalFocusSeconds;
+    
+    const globalAchievements = [
+        { id: 'global_first_topic', condition: () => completedTopics >= 1 },
+        { id: 'global_focus_30min', condition: () => globalTotalFocus >= 30 * 60 },
+        { id: 'global_focus_1h', condition: () => globalTotalFocus >= 60 * 60 },
+        { id: 'global_focus_5h', condition: () => globalTotalFocus >= 5 * 60 * 60 },
+        { id: 'global_10_sessions', condition: () => sessionsCount >= 10 }
+    ];
+    
+    for (const ach of globalAchievements) {
+        if (!appState.globalMeta.achievements[ach.id] && ach.condition()) {
+            appState.globalMeta.achievements[ach.id] = Date.now();
+        }
+    }
+}
+
 function renderAchievements() {
+    if (!currentSubject) {
+        achievementsContainer.innerHTML = '';
+        return;
+    }
+
     achievementsContainer.innerHTML = '';
 
     for (const a of ACHIEVEMENTS) {
-        const unlockedAt = appState.meta.achievements[a.id];
+        const unlockedAt = currentSubject.meta.achievements[a.id];
         const unlocked = !!unlockedAt;
         const badge = unlocked ? '<span class="badge unlocked">Desbloqueado</span>' : '<span class="badge">Bloqueado</span>';
 
@@ -923,12 +840,20 @@ function renderAchievements() {
 }
 
 function updateXpUi() {
-    levelText.textContent = String(appState.meta.level);
-    xpText.textContent = String(appState.meta.xp);
-    skillPointsText.textContent = String(appState.meta.skillPoints);
+    if (!currentSubject) {
+        levelText.textContent = '1';
+        xpText.textContent = '0';
+        skillPointsText.textContent = '0';
+        xpFill.style.width = '0%';
+        return;
+    }
 
-    const toNext = xpToNextLevel(appState.meta.level);
-    const pct = toNext > 0 ? Math.min(100, Math.round((appState.meta.xp / toNext) * 100)) : 0;
+    levelText.textContent = String(currentSubject.meta.level);
+    xpText.textContent = String(currentSubject.meta.xp);
+    skillPointsText.textContent = String(currentSubject.meta.skillPoints);
+
+    const toNext = xpToNextLevel(currentSubject.meta.level);
+    const pct = toNext > 0 ? Math.min(100, Math.round((currentSubject.meta.xp / toNext) * 100)) : 0;
     xpFill.style.width = `${pct}%`;
 }
 
@@ -941,25 +866,38 @@ function setAvatarTier(tier) {
 }
 
 function updateTimerUi() {
-    const t = appState.meta.timer;
+    if (!currentSubject) {
+        timerDisplay.textContent = '00:00:00';
+        streakDisplay.textContent = '00:00';
+        multiplierDisplay.textContent = 'x1.00';
+        timerToggleBtn.textContent = 'Iniciar';
+        timerStopBtn.disabled = true;
+        difficultySelect.value = 'normal';
+        updateXpUi();
+        return;
+    }
+
+    const t = currentSubject.meta.timer;
     timerDisplay.textContent = formatHMS(t.sessionSeconds);
     streakDisplay.textContent = formatMS(t.streakSeconds);
+    multiplierDisplay.textContent = 'x1.00';
 
-    const mult = getMultiplier();
-    multiplierDisplay.textContent = `x${mult.toFixed(2)}`;
-
-    const tier = getStreakTier(t.streakSeconds);
-    setAvatarTier(tier);
+    setAvatarTier(0);
 
     timerToggleBtn.textContent = t.running ? 'Pausar' : (t.sessionSeconds > 0 ? 'Reanudar' : 'Iniciar');
     timerStopBtn.disabled = !t.running && t.sessionSeconds === 0;
 
-    difficultySelect.value = appState.meta.difficulty;
+    difficultySelect.value = currentSubject.meta.difficulty;
     updateXpUi();
 }
 
 function startOrPauseTimer() {
-    const t = appState.meta.timer;
+    if (!currentSubject) {
+        showNotification('Selecciona una materia primero');
+        return;
+    }
+
+    const t = currentSubject.meta.timer;
     if (t.running) {
         pauseTimer();
     } else {
@@ -968,28 +906,21 @@ function startOrPauseTimer() {
 }
 
 function startTimer() {
-    const t = appState.meta.timer;
-    const cfg = getDifficulty();
+    if (!currentSubject) return;
+    
+    const t = currentSubject.meta.timer;
     const now = Date.now();
-
-    if (t.pausedAtMs) {
-        const pausedSeconds = (now - t.pausedAtMs) / 1000;
-        if (pausedSeconds > cfg.pauseGraceSeconds) {
-            t.streakSeconds = 0;
-            t.xpCarrySeconds = 0;
-        }
-    }
 
     t.running = true;
     t.lastTickMs = now;
     t.pausedAtMs = null;
 
-    // Record session start time if not resuming
     if (!t.currentSessionStartMs) {
         t.currentSessionStartMs = now;
     }
 
-    appState.meta.sessionsCount += 1;
+    currentSubject.meta.sessionsCount += 1;
+    appState.globalMeta.sessionsCount += 1;
     saveData();
 
     if (!timerIntervalId) {
@@ -1000,7 +931,9 @@ function startTimer() {
 }
 
 function pauseTimer() {
-    const t = appState.meta.timer;
+    if (!currentSubject) return;
+    
+    const t = currentSubject.meta.timer;
     if (!t.running) return;
     t.running = false;
     t.pausedAtMs = Date.now();
@@ -1010,18 +943,22 @@ function pauseTimer() {
 }
 
 function stopTimer() {
-    const t = appState.meta.timer;
+    if (!currentSubject) return;
+    
+    const t = currentSubject.meta.timer;
     t.running = false;
     t.lastTickMs = null;
     t.pausedAtMs = null;
 
-    if (t.sessionSeconds > appState.meta.longestSessionSeconds) {
-        appState.meta.longestSessionSeconds = t.sessionSeconds;
+    if (t.sessionSeconds > currentSubject.meta.longestSessionSeconds) {
+        currentSubject.meta.longestSessionSeconds = t.sessionSeconds;
+        if (t.sessionSeconds > appState.globalMeta.longestSessionSeconds) {
+            appState.globalMeta.longestSessionSeconds = t.sessionSeconds;
+        }
     }
 
-    // Record the session if it has duration
     if (t.sessionSeconds > 0 && t.currentSessionStartMs) {
-        const xpEarned = Math.floor(t.sessionSeconds / 60) * getDifficulty().xpPerMinute * getMultiplier();
+        const xpEarned = Math.floor(t.sessionSeconds / 60) * 6;
         recordSession(t.currentSessionStartMs, t.sessionSeconds, xpEarned);
     }
 
@@ -1030,13 +967,16 @@ function stopTimer() {
     t.xpCarrySeconds = 0;
     t.currentSessionStartMs = null;
 
+    checkAchievements();
     updateTimerUi();
     renderSessions();
     saveData(true);
 }
 
 function onTimerTick() {
-    const t = appState.meta.timer;
+    if (!currentSubject) return;
+    
+    const t = currentSubject.meta.timer;
     if (!t.running) return;
 
     const now = Date.now();
@@ -1049,29 +989,43 @@ function onTimerTick() {
     t.streakSeconds += deltaSeconds;
     t.xpCarrySeconds += deltaSeconds;
 
-    appState.meta.totalFocusSeconds += deltaSeconds;
+    currentSubject.meta.totalFocusSeconds += deltaSeconds;
+    appState.globalMeta.totalFocusSeconds += deltaSeconds;
+    
     const today = todayKey();
-    appState.meta.dailyFocusSeconds[today] = (appState.meta.dailyFocusSeconds[today] ?? 0) + deltaSeconds;
-
-    const cfg = getDifficulty();
-    const mult = getMultiplier();
+    currentSubject.meta.dailyFocusSeconds[today] = (currentSubject.meta.dailyFocusSeconds[today] ?? 0) + deltaSeconds;
+    appState.globalMeta.dailyFocusSeconds[today] = (appState.globalMeta.dailyFocusSeconds[today] ?? 0) + deltaSeconds;
 
     if (t.xpCarrySeconds >= 60) {
         const minutes = Math.floor(t.xpCarrySeconds / 60);
         t.xpCarrySeconds -= minutes * 60;
-        const gained = Math.floor(minutes * cfg.xpPerMinute * mult);
-        addXp(gained, { notify: false });
+        const gained = Math.floor(minutes * 6);
+        currentSubject.meta.xp += gained;
+        appState.globalMeta.xp += gained;
+        
+        while (currentSubject.meta.xp >= xpToNextLevel(currentSubject.meta.level)) {
+            currentSubject.meta.xp -= xpToNextLevel(currentSubject.meta.level);
+            currentSubject.meta.level += 1;
+            currentSubject.meta.skillPoints += 1;
+        }
+        
+        while (appState.globalMeta.xp >= xpToNextLevel(appState.globalMeta.level)) {
+            appState.globalMeta.xp -= xpToNextLevel(appState.globalMeta.level);
+            appState.globalMeta.level += 1;
+            appState.globalMeta.skillPoints += 1;
+        }
+        
+        updateXpUi();
     }
 
-    checkAchievements();
     updateTimerUi();
     renderStats();
     saveData();
 }
 
 function setDifficulty(value) {
-    if (!DIFFICULTY_CONFIG[value]) return;
-    appState.meta.difficulty = value;
+    if (!currentSubject || !DIFFICULTY_CONFIG[value]) return;
+    currentSubject.meta.difficulty = value;
     saveData(true);
     updateTimerUi();
     renderSkillTree();
@@ -1079,17 +1033,37 @@ function setDifficulty(value) {
 }
 
 function setActiveView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('view-active'));
-    const view = document.getElementById(viewId);
-    if (view) view.classList.add('view-active');
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        const active = btn.dataset.view === viewId;
-        btn.classList.toggle('active', active);
-    });
+    // Remove active class from all views and tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // If it's a subject view tab (listView, mapView, skillView, statsView)
+    if (['listView', 'mapView', 'skillView', 'statsView'].includes(viewId)) {
+        // Only affect the nested views inside subjectView
+        const nestedViews = document.querySelector('#subjectView .main-content').querySelectorAll('.view');
+        nestedViews.forEach(v => v.classList.remove('view-active'));
+        
+        const view = document.getElementById(viewId);
+        if (view) {
+            view.classList.add('view-active');
+        }
+    } else {
+        // For top-level views (homeView, subjectView)
+        const topLevelViews = document.querySelector('.main-content > .view');
+        document.querySelectorAll('.main-content > .view').forEach(v => v.classList.remove('view-active'));
+        
+        const view = document.getElementById(viewId);
+        if (view) {
+            view.classList.add('view-active');
+        }
+    }
+    
+    // Update tab button state
+    const activeTab = document.querySelector(`.tab-btn[data-view="${viewId}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
 }
 
-// Session tracking functions
 function formatDateTime(timestamp) {
     const date = new Date(timestamp);
     const day = String(date.getDate()).padStart(2, '0');
@@ -1101,18 +1075,25 @@ function formatDateTime(timestamp) {
 }
 
 function recordSession(startTime, durationSeconds, xpEarned) {
+    if (!currentSubject) return;
+    
     const session = {
         startTime: startTime,
         endTime: Date.now(),
         durationSeconds: durationSeconds,
         xpEarned: xpEarned,
-        difficulty: appState.meta.difficulty
+        difficulty: currentSubject.meta.difficulty
     };
     
-    appState.meta.sessions.unshift(session);
+    currentSubject.meta.sessions.unshift(session);
     
-    if (appState.meta.sessions.length > MAX_SESSIONS_DISPLAY) {
-        appState.meta.sessions = appState.meta.sessions.slice(0, MAX_SESSIONS_DISPLAY);
+    if (currentSubject.meta.sessions.length > MAX_SESSIONS_DISPLAY) {
+        currentSubject.meta.sessions = currentSubject.meta.sessions.slice(0, MAX_SESSIONS_DISPLAY);
+    }
+    
+    appState.globalMeta.sessions.unshift(session);
+    if (appState.globalMeta.sessions.length > MAX_SESSIONS_DISPLAY) {
+        appState.globalMeta.sessions = appState.globalMeta.sessions.slice(0, MAX_SESSIONS_DISPLAY);
     }
     
     saveData(true);
@@ -1121,7 +1102,7 @@ function recordSession(startTime, durationSeconds, xpEarned) {
 function renderSessions() {
     if (!sessionsContainer) return;
     
-    const sessions = appState.meta.sessions;
+    const sessions = currentSubject ? currentSubject.meta.sessions : [];
     
     if (sessions.length === 0) {
         sessionsContainer.innerHTML = '<div class="sessions-empty">No hay sesiones registradas</div>';
@@ -1132,7 +1113,7 @@ function renderSessions() {
         <div class="session-item">
             <div class="session-icon">⏱️</div>
             <div class="session-info">
-                <div class="session-date">Sesión ${appState.meta.sessionsCount - index}</div>
+                <div class="session-date">Sesión ${currentSubject.meta.sessionsCount - index}</div>
                 <div class="session-time">${formatDateTime(session.startTime)}</div>
             </div>
             <div class="session-stats">
@@ -1145,17 +1126,181 @@ function renderSessions() {
 
 function renderAllNonTimer() {
     renderCategories();
-    updateGlobalProgress();
+    updateSubjectProgress();
     renderMap();
     renderSkillTree();
     renderStats();
     renderAchievements();
     renderSessions();
+    renderSubjectList();
+    renderHomePage();
 }
 
 function renderAll() {
     renderAllNonTimer();
     updateTimerUi();
+}
+
+function renderSubjectList() {
+    subjectList.innerHTML = '';
+    
+    appState.subjects.forEach(subject => {
+        const progress = calculateSubjectProgress(subject);
+        
+        const btn = document.createElement('button');
+        btn.className = `nav-item ${currentSubject?.id === subject.id ? 'active' : ''}`;
+        btn.dataset.subjectId = subject.id;
+        btn.innerHTML = `
+            <span class="nav-icon">${subject.icon}</span>
+            <span class="nav-text">${escapeHtml(subject.name)}</span>
+            <span class="nav-progress">${progress}%</span>
+        `;
+        
+        btn.addEventListener('click', () => {
+            console.log('Subject clicked:', subject);
+            selectSubject(subject.id);
+        });
+        subjectList.appendChild(btn);
+    });
+}
+
+function calculateSubjectProgress(subject) {
+    let totalTopics = 0;
+    let completedTopics = 0;
+    
+    for (const category of subject.categories) {
+        totalTopics += category.topics.length;
+        completedTopics += category.topics.filter(t => t.completed).length;
+    }
+    
+    return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+}
+
+function selectSubject(subjectId) {
+    currentSubject = appState.subjects.find(sub => sub.id === subjectId);
+    
+    if (currentSubject) {
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.subjectId == subjectId);
+        });
+        
+        subjectTitle.textContent = currentSubject.name;
+        subjectSubtitle.textContent = 'Progreso de estudio';
+        setActiveView('subjectView');
+        renderAll();
+    }
+}
+
+function showAddSubjectModal() {
+    subjectNameInput.value = '';
+    subjectIconInput.value = '📚';
+    subjectColorInput.value = '#667eea';
+    addSubjectModal.classList.add('active');
+}
+
+function hideAddSubjectModal() {
+    addSubjectModal.classList.remove('active');
+}
+
+function addSubject() {
+    const name = subjectNameInput.value.trim();
+    const icon = subjectIconInput.value.trim();
+    const color = subjectColorInput.value;
+    
+    if (!name) {
+        showNotification('El nombre de la materia es obligatorio');
+        return;
+    }
+    
+    const newSubject = createSubject(Date.now(), name, icon || '📚', color);
+    appState.subjects.push(newSubject);
+    saveData(true);
+    hideAddSubjectModal();
+    renderSubjectList();
+    renderHomePage();
+    showNotification(`Materia "${name}" creada`);
+}
+
+function deleteCurrentSubject() {
+    if (!currentSubject) return;
+    
+    if (!confirm(`¿Eliminar la materia "${currentSubject.name}"? Esta acción no se puede deshacer.`)) {
+        return;
+    }
+    
+    const index = appState.subjects.findIndex(sub => sub.id === currentSubject.id);
+    if (index !== -1) {
+        appState.subjects.splice(index, 1);
+        currentSubject = null;
+        saveData(true);
+        setActiveView('homeView');
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === 'homeView');
+        });
+        renderAll();
+        showNotification('Materia eliminada');
+    }
+}
+
+function renderHomePage() {
+    const totalSubjects = appState.subjects.length;
+    const totalAchievements = Object.keys(appState.globalMeta.achievements).length;
+    const totalTime = prettyTime(appState.globalMeta.totalFocusSeconds);
+    const globalProgress = calculateGlobalProgress();
+    
+    totalSubjectsEl.textContent = totalSubjects;
+    totalAchievementsEl.textContent = totalAchievements;
+    totalTimeEl.textContent = totalTime;
+    globalProgressEl.textContent = `${globalProgress}%`;
+    
+    renderRecentSubjects();
+}
+
+function calculateGlobalProgress() {
+    let totalTopics = 0;
+    let completedTopics = 0;
+    
+    appState.subjects.forEach(subject => {
+        subject.categories.forEach(category => {
+            totalTopics += category.topics.length;
+            completedTopics += category.topics.filter(t => t.completed).length;
+        });
+    });
+    
+    return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+}
+
+function renderRecentSubjects() {
+    recentSubjectsGrid.innerHTML = '';
+    
+    const recentSubjects = [...appState.subjects]
+        .sort((a, b) => {
+            const aTime = getSubjectLastActivity(a);
+            const bTime = getSubjectLastActivity(b);
+            return bTime - aTime;
+        })
+        .slice(0, 6);
+    
+    recentSubjects.forEach(subject => {
+        const progress = calculateSubjectProgress(subject);
+        
+        const card = document.createElement('button');
+        card.className = 'subject-card';
+        card.dataset.subjectId = subject.id;
+        card.innerHTML = `
+            <div class="subject-card-icon">${subject.icon}</div>
+            <div class="subject-card-name">${escapeHtml(subject.name)}</div>
+            <div class="subject-card-progress">${progress}% completado</div>
+        `;
+        
+        card.addEventListener('click', () => selectSubject(subject.id));
+        recentSubjectsGrid.appendChild(card);
+    });
+}
+
+function getSubjectLastActivity(subject) {
+    const sessionDates = subject.meta.sessions.map(s => s.startTime);
+    return sessionDates.length > 0 ? Math.max(...sessionDates) : 0;
 }
 
 function setupEventListeners() {
@@ -1167,15 +1312,6 @@ function setupEventListeners() {
     resetBtn.addEventListener('click', resetData);
 
     categoriesContainer.addEventListener('click', (e) => {
-        const reviewBtn = e.target.closest('button[data-action="review"]');
-        if (reviewBtn) {
-            e.stopPropagation();
-            const categoryId = parseInt(reviewBtn.dataset.categoryId, 10);
-            const topicIndex = parseInt(reviewBtn.dataset.topicIndex, 10);
-            completeDueReview(categoryId, topicIndex);
-            return;
-        }
-
         const topicItem = e.target.closest('.topic-item');
         if (!topicItem) return;
         const categoryId = parseInt(topicItem.dataset.categoryId, 10);
@@ -1193,6 +1329,83 @@ function setupEventListeners() {
     });
 
     window.addEventListener('beforeunload', () => saveData(true));
+
+    addSubjectBtn.addEventListener('click', showAddSubjectModal);
+    closeModalBtn.addEventListener('click', hideAddSubjectModal);
+    cancelModalBtn.addEventListener('click', hideAddSubjectModal);
+    confirmAddSubjectBtn.addEventListener('click', addSubject);
+
+    deleteSubjectBtn.addEventListener('click', deleteCurrentSubject);
+
+    quickAddSubject.addEventListener('click', showAddSubjectModal);
+    quickStartSession.addEventListener('click', () => {
+        if (currentSubject) {
+            startOrPauseTimer();
+        } else {
+            showNotification('Selecciona una materia primero');
+        }
+    });
+    quickViewStats.addEventListener('click', () => {
+        if (currentSubject) {
+            setActiveView('statsView');
+        } else {
+            showNotification('Selecciona una materia primero');
+        }
+    });
+
+    document.querySelectorAll('.nav-item[data-view="homeView"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentSubject = null;
+            setActiveView('homeView');
+            document.querySelectorAll('.nav-item').forEach(b => {
+                b.classList.toggle('active', b.dataset.view === 'homeView');
+            });
+            renderAll();
+        });
+    });
+}
+
+function toggleTopicCompleted(categoryId, topicIndex) {
+    if (!currentSubject) return;
+    
+    const category = currentSubject.categories.find(c => c.id === categoryId);
+    if (!category) return;
+    const topic = category.topics[topicIndex];
+    if (!topic) return;
+
+    const now = Date.now();
+    const wasCompleted = !!topic.completed;
+    topic.completed = !topic.completed;
+
+    if (topic.completed) {
+        topic.completedAt = now;
+        topic.reviews = [];
+        currentSubject.meta.xp += 22;
+        appState.globalMeta.xp += 22;
+        
+        while (currentSubject.meta.xp >= xpToNextLevel(currentSubject.meta.level)) {
+            currentSubject.meta.xp -= xpToNextLevel(currentSubject.meta.level);
+            currentSubject.meta.level += 1;
+            currentSubject.meta.skillPoints += 1;
+        }
+        
+        while (appState.globalMeta.xp >= xpToNextLevel(appState.globalMeta.level)) {
+            appState.globalMeta.xp -= xpToNextLevel(appState.globalMeta.level);
+            appState.globalMeta.level += 1;
+            appState.globalMeta.skillPoints += 1;
+        }
+        
+        showNotification('Tema completado! +22 XP');
+    } else {
+        topic.completedAt = null;
+        topic.reviews = [];
+    }
+
+    if (wasCompleted !== topic.completed) {
+        checkAchievements();
+        renderAllNonTimer();
+        saveData(true);
+    }
 }
 
 function ensureNotificationStyles() {
@@ -1208,18 +1421,19 @@ function ensureNotificationStyles() {
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(400px); opacity: 0; }
         }
-        @keyframes particlePop {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) scale(0.6); opacity: 0; }
-        }
-        .particle {
+        .notification {
             position: fixed;
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
-            pointer-events: none;
-            z-index: 999;
-            animation: particlePop 650ms ease-out forwards;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slideIn 0.25s ease-out;
+            font-weight: 800;
+            max-width: min(420px, calc(100vw - 40px));
         }
     `;
     document.head.appendChild(style);
@@ -1231,21 +1445,6 @@ function showNotification(message) {
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        padding: 14px 18px;
-        border-radius: 10px;
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        animation: slideIn 0.25s ease-out;
-        font-weight: 800;
-        max-width: min(420px, calc(100vw - 40px));
-    `;
-
     document.body.appendChild(notification);
 
     setTimeout(() => {
@@ -1254,61 +1453,6 @@ function showNotification(message) {
     }, 2400);
 }
 
-function particleBurst(target, color) {
-    ensureNotificationStyles();
-    const rect = (target && target.getBoundingClientRect) ? target.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
-    const originX = rect.left + rect.width * 0.6;
-    const originY = rect.top + rect.height * 0.2;
-
-    const count = 12;
-    for (let i = 0; i < count; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        p.style.background = color;
-        p.style.left = `${originX}px`;
-        p.style.top = `${originY}px`;
-        p.style.setProperty('--dx', `${rand(-120, 120)}px`);
-        p.style.setProperty('--dy', `${rand(-160, 60)}px`);
-        p.style.opacity = String(0.9);
-        document.body.appendChild(p);
-        setTimeout(() => p.remove(), 700);
-    }
-}
-
-function rand(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function playPing(freq = 540) {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.value = freq;
-        g.gain.value = 0.0001;
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start();
-        g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
-        o.stop(ctx.currentTime + 0.13);
-        o.onended = () => ctx.close();
-    } catch {
-        // ignore
-    }
-}
-
-function initApp() {
-    loadData();
-    loadTheme();
-    difficultySelect.value = appState.meta.difficulty;
-    renderAll();
-    setupEventListeners();
-    setupAdditionalEventListeners();
-}
-
-// Theme management
 function loadTheme() {
     const savedTheme = localStorage.getItem('studyTrackerTheme');
     isDarkMode = savedTheme === 'dark';
@@ -1331,154 +1475,31 @@ function toggleTheme() {
     applyTheme();
 }
 
-// Event listeners for new features
 function setupAdditionalEventListeners() {
-    // Theme toggle
     themeToggleBtn.addEventListener('click', toggleTheme);
     
-    // Pomodoro mode
-    pomodoroModeSelect.addEventListener('change', (e) => {
-        const pomodoroMode = e.target.value;
-        if (pomodoroMode === 'off') {
-            // Clear any active pomodoro timer
-            if (window.pomodoroIntervalId) {
-                clearInterval(window.pomodoroIntervalId);
-                window.pomodoroIntervalId = null;
-            }
-        } else {
-            // Start pomodoro timer
-            const [workMinutes, breakMinutes] = pomodoroMode.split('-').map(Number);
-            startPomodoroTimer(workMinutes * 60, breakMinutes * 60);
-        }
-    });
-    
-    // Alarm mode
-    alarmModeSelect.addEventListener('change', (e) => {
-        const alarmMode = e.target.value;
-        if (alarmMode === 'off') {
-            // Clear any active alarm
-            if (window.alarmTimeoutId) {
-                clearTimeout(window.alarmTimeoutId);
-                window.alarmTimeoutId = null;
-            }
-        } else {
-            // Set alarm
-            const [alarmMinutes] = alarmMode.split('m').map(Number);
-            setAlarm(alarmMinutes * 60);
+    // Add event listener to subject list container
+    subjectList.addEventListener('click', (e) => {
+        const navItem = e.target.closest('.nav-item');
+        if (navItem && navItem.dataset.subjectId) {
+            selectSubject(parseInt(navItem.dataset.subjectId, 10));
         }
     });
 }
 
-// Pomodoro timer functionality
-function startPomodoroTimer(workSeconds, breakSeconds) {
-    if (window.pomodoroIntervalId) {
-        clearInterval(window.pomodoroIntervalId);
-    }
+function initApp() {
+    loadData();
+    loadTheme();
+    renderAll();
+    setupEventListeners();
+    setupAdditionalEventListeners();
     
-    let remainingSeconds = workSeconds;
-    let inBreak = false;
-    
-    window.pomodoroIntervalId = setInterval(() => {
-        remainingSeconds--;
-        
-        if (remainingSeconds <= 0) {
-            if (inBreak) {
-                // Break ends, start work again
-                remainingSeconds = workSeconds;
-                inBreak = false;
-                showNotification('¡Tiempo de trabajo!');
-            } else {
-                // Work ends, start break
-                remainingSeconds = breakSeconds;
-                inBreak = true;
-                showNotification('¡Tiempo de descanso!');
-            }
-            playAlarmSound();
-        }
-    }, 1000);
-}
-
-// Alarm functionality
-function setAlarm(seconds) {
-    if (window.alarmTimeoutId) {
-        clearTimeout(window.alarmTimeoutId);
-    }
-    
-    window.alarmTimeoutId = setTimeout(() => {
-        showNotification('¡La alarma ha sonado!');
-        playAlarmSound();
-    }, seconds * 1000);
-}
-
-// Alarm sound
-function playAlarmSound() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.value = 440;
-        g.gain.value = 0.1;
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start();
-        
-        // Beep pattern
-        const beepDuration = 200;
-        const beepInterval = 500;
-        
-        const beepSequence = [
-            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beepDuration / 1000),
-            () => g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + beepInterval / 1000),
-            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (beepInterval + beepDuration) / 1000),
-            () => g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + (beepInterval * 2) / 1000),
-            () => g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (beepInterval * 2 + beepDuration) / 1000)
-        ];
-        
-        beepSequence.forEach((beep, index) => {
-            setTimeout(() => beep(), index * beepInterval);
-        });
-        
-        o.stop(ctx.currentTime + 2.5);
-        o.onended = () => ctx.close();
-    } catch (e) {
-        console.error('Error playing alarm:', e);
-    }
-}
-
-// Add new achievements for dark mode, pomodoro, and alarm
-function initAchievements() {
-    const newAchievements = [
-        // Dark Mode achievements
-        { id: 'dark_mode_master', title: 'Maestro del Oscuro', desc: 'Activar el modo nocturno 10 veces', kind: 'special', condition: 'dark_mode_10_times' },
-        { id: 'night_owl', title: 'Búho Nocturno', desc: 'Estudiar 5 sesiones en modo nocturno', kind: 'special', condition: '5_sessions_dark_mode' },
-        
-        // Pomodoro achievements
-        { id: 'pomodoro_beginner', title: 'Principiante Pomodoro', desc: 'Completar 5 ciclos pomodoro', kind: 'special', condition: '5_pomodoro_cycles' },
-        { id: 'pomodoro_pro', title: 'Pomodoro Profesional', desc: 'Completar 25 ciclos pomodoro', kind: 'special', condition: '25_pomodoro_cycles' },
-        { id: 'pomodoro_expert', title: 'Experto Pomodoro', desc: 'Completar 50 ciclos pomodoro', kind: 'special', condition: '50_pomodoro_cycles' },
-        
-        // Alarm achievements
-        { id: 'alarm_user', title: 'Uso de Alarma', desc: 'Usar la alarma 5 veces', kind: 'special', condition: '5_alarm_uses' },
-        { id: 'alarm_master', title: 'Maestro de Alarmas', desc: 'Usar la alarma 20 veces', kind: 'special', condition: '20_alarm_uses' },
-        
-        // Consistency achievements
-        { id: 'consistent_streak', title: 'Racha Consistente', desc: 'Estudiar 5 días consecutivos', kind: 'time', condition: '5_days_streak' },
-        { id: 'long_streak', title: 'Racha Larga', desc: 'Estudiar 10 días consecutivos', kind: 'time', condition: '10_days_streak' },
-        
-        // Topic achievements
-        { id: 'quick_learner', title: 'Aprendiz Rápido', desc: 'Completar 10 temas en un solo día', kind: 'progress', condition: '10_topics_day' },
-        { id: 'deep_learner', title: 'Aprendiz Profundo', desc: 'Completar un tema de nivel 3', kind: 'topic', condition: 'complete_level_3_topic' }
-    ];
-    
-    // Add new achievements to existing ones
-    ACHIEVEMENTS.push(...newAchievements);
-    
-    // Save to localStorage
-    const existingAchievements = JSON.parse(localStorage.getItem('studyTrackerAchievements') || '[]');
-    const allAchievements = [...existingAchievements, ...newAchievements];
-    
-    localStorage.setItem('studyTrackerAchievements', JSON.stringify(allAchievements));
+    // Open to home page by default
+    currentSubject = null;
+    setActiveView('homeView');
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === 'homeView');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

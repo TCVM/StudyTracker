@@ -3,168 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Tracker</title>
+    <title>Study Tracker - Sistema de Estudio General</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="header-content">
-                <h1 class="title">Arquitectura y Organización de Computadoras</h1>
-                <p class="subtitle">Visualiza tu progreso de estudio en arquitectura de computadoras</p>
-                <div class="global-progress">
-                    <div class="progress-header">
-                        <span>Progreso Global</span>
-                        <span class="progress-percentage" id="globalPercentage">0%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="globalProgress" style="width: 0%"></div>
-                    </div>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">📚</span>
+                    <span class="logo-text">Study Tracker</span>
                 </div>
-
-                <section class="session-panel" aria-label="Sesión de enfoque">
-                    <div class="session-left">
-                        <div class="timer-display" id="timerDisplay">00:00:00</div>
-                        <div class="timer-meta">
-                            <div class="timer-pill" title="Racha de tiempo (en esta sesión)">
-                                Racha: <span id="streakDisplay">00:00</span>
-                            </div>
-                            <div class="timer-pill" title="Multiplicador actual">
-                                Mult: <span id="multiplierDisplay">x1.00</span>
-                            </div>
-                            <div class="timer-pill" title="Dificultad">
-                                <label class="difficulty-label" for="difficultySelect">Modo</label>
-                                <select id="difficultySelect" class="difficulty-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="hardcore">Hardcore</option>
-                                </select>
-                            </div>
-                            <div class="timer-pill" title="Modo Pomodoro">
-                                <label class="difficulty-label" for="pomodoroMode">Pomodoro</label>
-                                <select id="pomodoroMode" class="difficulty-select">
-                                    <option value="off">Desactivado</option>
-                                    <option value="25-5">25/5</option>
-                                    <option value="50-10">50/10</option>
-                                    <option value="15-5">15/5</option>
-                                    <option value="custom">Personalizado</option>
-                                </select>
-                            </div>
-                            <div class="timer-pill" title="Alarma">
-                                <label class="difficulty-label" for="alarmMode">Alarma</label>
-                                <select id="alarmMode" class="difficulty-select">
-                                    <option value="off">Desactivado</option>
-                                    <option value="15m">15 min</option>
-                                    <option value="30m">30 min</option>
-                                    <option value="45m">45 min</option>
-                                    <option value="60m">60 min</option>
-                                    <option value="custom">Personalizado</option>
-                                </select>
-                            </div>
-                            <div class="timer-pill" title="Modo Nocturno">
-                                <button id="themeToggleBtn" class="theme-toggle" title="Alternar modo nocturno">🌙</button>
-                            </div>
-                        </div>
-                        <div class="timer-actions">
-                            <button class="btn btn-primary" id="timerToggleBtn">Iniciar</button>
-                            <button class="btn btn-secondary" id="timerStopBtn" disabled>Detener</button>
-                        </div>
-                    </div>
-
-                    <div class="session-right">
-                        <div class="avatar-wrap" aria-label="Indicador visual de racha">
-                            <div class="streak-avatar streak-tier-0" id="streakAvatar" role="img" aria-label="Racha visual"></div>
-                            <div class="avatar-caption" id="avatarCaption">En frío</div>
-                        </div>
-
-                        <div class="xp-panel" aria-label="Progresión">
-                            <div class="xp-header">
-                                <div class="xp-level">Nivel <span id="levelText">1</span></div>
-                                <div class="xp-total"><span id="xpText">0</span> XP</div>
-                            </div>
-                            <div class="xp-bar" aria-label="Progreso de nivel">
-                                <div class="xp-fill" id="xpFill" style="width: 0%"></div>
-                            </div>
-                            <div class="xp-sub">
-                                <span>SP: <span id="skillPointsText">0</span></span>
-                                <span id="focusTodayText">Hoy: 0m</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <nav class="view-tabs" aria-label="Vistas">
-                    <button class="tab-btn active" data-view="listView" type="button">Lista</button>
-                    <button class="tab-btn" data-view="mapView" type="button">Mapa</button>
-                    <button class="tab-btn" data-view="skillView" type="button">Árbol</button>
-                    <button class="tab-btn" data-view="statsView" type="button">Stats</button>
-                </nav>
+                <button class="btn-add-subject" id="addSubjectBtn">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Nueva Materia</span>
+                </button>
             </div>
-        </header>
+            
+            <nav class="subject-nav">
+                <div class="nav-section">
+                    <div class="section-title">Principal</div>
+                    <button class="nav-item active" data-view="homeView" data-subject="global">
+                        <span class="nav-icon">🏠</span>
+                        <span class="nav-text">Inicio</span>
+                    </button>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="section-title">Materias</div>
+                    <div class="subject-list" id="subjectList"></div>
+                </div>
+            </nav>
+        </aside>
 
         <main class="main-content">
-            <section class="view view-active" id="listView">
-                <div class="categories-container" id="categoriesContainer"></div>
-            </section>
+            <!-- Página de Inicio (Global) -->
+            <section class="view view-active" id="homeView">
+                <div class="home-container">
+                    <div class="home-header">
+                        <h1 class="home-title">¡Bienvenido a tu Sistema de Estudio!</h1>
+                        <p class="home-subtitle">Organiza tus materias y sigue tu progreso global</p>
+                    </div>
 
-            <section class="view" id="mapView" aria-label="Mapa de temas">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Mapa de Temas</h2>
-                        <div class="panel-subtitle">Limpia marcadores completando temas y repasos</div>
+                    <div class="home-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalSubjects">0</div>
+                                <div class="stat-label">Materias</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalTime">0h</div>
+                                <div class="stat-label">Tiempo Total</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalAchievements">0</div>
+                                <div class="stat-label">Logros</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="globalProgress">0%</div>
+                                <div class="stat-label">Progreso Global</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="map-legend">
-                        <span class="legend-pill"><span class="dot dot-pending"></span>Pendiente</span>
-                        <span class="legend-pill"><span class="dot dot-due"></span>Repaso</span>
-                        <span class="legend-pill"><span class="dot dot-done"></span>Completado</span>
+
+                    <div class="quick-actions">
+                        <h2>Acciones Rápidas</h2>
+                        <div class="actions-grid">
+                            <button class="action-card" id="quickAddSubject">
+                                <div class="action-icon">➕</div>
+                                <div class="action-title">Nueva Materia</div>
+                                <div class="action-desc">Añade una nueva materia a tu plan de estudios</div>
+                            </button>
+                            
+                            <button class="action-card" id="quickStartSession">
+                                <div class="action-icon">⏵️</div>
+                                <div class="action-title">Iniciar Sesión</div>
+                                <div class="action-desc">Comienza a estudiar con el timer</div>
+                            </button>
+                            
+                            <button class="action-card" id="quickViewStats">
+                                <div class="action-icon">📉</div>
+                                <div class="action-title">Ver Estadísticas</div>
+                                <div class="action-desc">Analiza tu progreso detallado</div>
+                            </button>
+                        </div>
                     </div>
-                    <div class="map-grid" id="mapContainer"></div>
+
+                    <div class="recent-subjects">
+                        <h2>Materias Recientes</h2>
+                        <div class="subjects-grid" id="recentSubjectsGrid"></div>
+                    </div>
                 </div>
             </section>
 
-            <section class="view" id="skillView" aria-label="Árbol de habilidades">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Árbol de Habilidades</h2>
-                        <div class="panel-subtitle">Gasta SP al subir de nivel para mejorar tu progreso</div>
-                    </div>
-                    <div class="skills-grid" id="skillTreeContainer"></div>
-                </div>
-            </section>
+            <!-- Página de Materia -->
+            <section class="view" id="subjectView">
+                <div class="container">
+                    <header class="header">
+                        <div class="header-content">
+                            <div class="subject-header">
+                                <div class="subject-info">
+                                    <h1 class="title" id="subjectTitle">Materia</h1>
+                                    <p class="subtitle" id="subjectSubtitle">Progreso de estudio</p>
+                                </div>
+                                <div class="subject-actions">
+                                    <button class="btn btn-secondary" id="editSubjectBtn">Editar</button>
+                                    <button class="btn btn-secondary" id="deleteSubjectBtn">Eliminar</button>
+                                </div>
+                            </div>
 
-            <section class="view" id="statsView" aria-label="Estadísticas y logros">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Estadísticas</h2>
-                        <div class="panel-subtitle">Tiempo, consistencia y progreso</div>
-                    </div>
-                    <div class="stats-grid" id="statsContainer"></div>
-                </div>
+                            <div class="global-progress">
+                                <div class="progress-header">
+                                    <span>Progreso de Materia</span>
+                                    <span class="progress-percentage" id="subjectPercentage">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="subjectProgress" style="width: 0%"></div>
+                                </div>
+                            </div>
 
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Historial de Sesiones</h2>
-                        <div class="panel-subtitle">Registro de sesiones de estudio</div>
-                    </div>
-                    <div class="sessions-list" id="sessionsContainer">
-                        <div class="sessions-empty">No hay sesiones registradas</div>
-                    </div>
-                </div>
+                            <section class="session-panel" aria-label="Sesión de enfoque">
+                                <div class="session-left">
+                                    <div class="timer-display" id="timerDisplay">00:00:00</div>
+                                    <div class="timer-meta">
+                                        <div class="timer-pill" title="Racha de tiempo (en esta sesión)">
+                                            Racha: <span id="streakDisplay">00:00</span>
+                                        </div>
+                                        <div class="timer-pill" title="Multiplicador actual">
+                                            Mult: <span id="multiplierDisplay">x1.00</span>
+                                        </div>
+                                        <div class="timer-pill" title="Dificultad">
+                                            <label class="difficulty-label" for="difficultySelect">Modo</label>
+                                            <select id="difficultySelect" class="difficulty-select">
+                                                <option value="normal">Normal</option>
+                                                <option value="hardcore">Hardcore</option>
+                                            </select>
+                                        </div>
+                                        <div class="timer-pill" title="Modo Pomodoro">
+                                            <label class="difficulty-label" for="pomodoroMode">Pomodoro</label>
+                                            <select id="pomodoroMode" class="difficulty-select">
+                                                <option value="off">Desactivado</option>
+                                                <option value="25-5">25/5</option>
+                                                <option value="50-10">50/10</option>
+                                                <option value="15-5">15/5</option>
+                                                <option value="custom">Personalizado</option>
+                                            </select>
+                                        </div>
+                                        <div class="timer-pill" title="Alarma">
+                                            <label class="difficulty-label" for="alarmMode">Alarma</label>
+                                            <select id="alarmMode" class="difficulty-select">
+                                                <option value="off">Desactivado</option>
+                                                <option value="15m">15 min</option>
+                                                <option value="30m">30 min</option>
+                                                <option value="45m">45 min</option>
+                                                <option value="60m">60 min</option>
+                                                <option value="custom">Personalizado</option>
+                                            </select>
+                                        </div>
+                                        <div class="timer-pill" title="Modo Nocturno">
+                                            <button id="themeToggleBtn" class="theme-toggle" title="Alternar modo nocturno">🌙</button>
+                                        </div>
+                                    </div>
+                                    <div class="timer-actions">
+                                        <button class="btn btn-primary" id="timerToggleBtn">Iniciar</button>
+                                        <button class="btn btn-secondary" id="timerStopBtn" disabled>Detener</button>
+                                    </div>
+                                </div>
 
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Logros</h2>
-                        <div class="panel-subtitle">Desbloquea por tiempo de enfoque y rachas</div>
-                    </div>
-                    <div class="achievements-grid" id="achievementsContainer"></div>
+                                <div class="session-right">
+                                    <div class="avatar-wrap" aria-label="Indicador visual de racha">
+                                        <div class="streak-avatar streak-tier-0" id="streakAvatar" role="img" aria-label="Racha visual"></div>
+                                        <div class="avatar-caption" id="avatarCaption">En frío</div>
+                                    </div>
+
+                                    <div class="xp-panel" aria-label="Progresión">
+                                        <div class="xp-header">
+                                            <div class="xp-level">Nivel <span id="levelText">1</span></div>
+                                            <div class="xp-total"><span id="xpText">0</span> XP</div>
+                                        </div>
+                                        <div class="xp-bar" aria-label="Progreso de nivel">
+                                            <div class="xp-fill" id="xpFill" style="width: 0%"></div>
+                                        </div>
+                                        <div class="xp-sub">
+                                            <span>SP: <span id="skillPointsText">0</span></span>
+                                            <span id="focusTodayText">Hoy: 0m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <nav class="view-tabs" aria-label="Vistas">
+                                <button class="tab-btn active" data-view="listView" type="button">Lista</button>
+                                <button class="tab-btn" data-view="mapView" type="button">Mapa</button>
+                                <button class="tab-btn" data-view="skillView" type="button">Árbol</button>
+                                <button class="tab-btn" data-view="statsView" type="button">Stats</button>
+                            </nav>
+                        </div>
+                    </header>
+
+                    <main class="main-content">
+                        <section class="view view-active" id="listView">
+                            <div class="categories-container" id="categoriesContainer"></div>
+                        </section>
+
+                        <section class="view" id="mapView" aria-label="Mapa de temas">
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2 class="panel-title">Mapa de Temas</h2>
+                                    <div class="panel-subtitle">Limpia marcadores completando temas y repasos</div>
+                                </div>
+                                <div class="map-legend">
+                                    <span class="legend-pill"><span class="dot dot-pending"></span>Pendiente</span>
+                                    <span class="legend-pill"><span class="dot dot-due"></span>Repaso</span>
+                                    <span class="legend-pill"><span class="dot dot-done"></span>Completado</span>
+                                </div>
+                                <div class="map-grid" id="mapContainer"></div>
+                            </div>
+                        </section>
+
+                        <section class="view" id="skillView" aria-label="Árbol de habilidades">
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2 class="panel-title">Árbol de Habilidades</h2>
+                                    <div class="panel-subtitle">Gasta SP al subir de nivel para mejorar tu progreso</div>
+                                </div>
+                                <div class="skills-grid" id="skillTreeContainer"></div>
+                            </div>
+                        </section>
+
+                        <section class="view" id="statsView" aria-label="Estadísticas y logros">
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2 class="panel-title">Estadísticas</h2>
+                                    <div class="panel-subtitle">Tiempo, consistencia y progreso</div>
+                                </div>
+                                <div class="stats-grid" id="statsContainer"></div>
+                            </div>
+
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2 class="panel-title">Historial de Sesiones</h2>
+                                    <div class="panel-subtitle">Registro de sesiones de estudio</div>
+                                </div>
+                                <div class="sessions-list" id="sessionsContainer">
+                                    <div class="sessions-empty">No hay sesiones registradas</div>
+                                </div>
+                            </div>
+
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2 class="panel-title">Logros</h2>
+                                    <div class="panel-subtitle">Desbloquea por tiempo de enfoque y rachas</div>
+                                </div>
+                                <div class="achievements-grid" id="achievementsContainer"></div>
+                            </div>
+                        </section>
+                    </main>
+
+                    <footer class="footer">
+                        <button class="btn btn-primary" id="saveBtn">Guardar Progreso</button>
+                        <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
+                    </footer>
                 </div>
             </section>
         </main>
+    </div>
 
-        <footer class="footer">
-            <button class="btn btn-primary" id="saveBtn">Guardar Progreso</button>
-            <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
-        </footer>
+    <!-- Modal para nueva materia -->
+    <div class="modal" id="addSubjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Materia</h3>
+                <button class="modal-close" id="closeModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="subjectName">Nombre de la Materia</label>
+                    <input type="text" id="subjectName" placeholder="Ej: Matemáticas" required>
+                </div>
+                <div class="form-group">
+                    <label for="subjectIcon">Icono</label>
+                    <input type="text" id="subjectIcon" placeholder="Ej: 📐" required>
+                </div>
+                <div class="form-group">
+                    <label for="subjectColor">Color</label>
+                    <input type="color" id="subjectColor" value="#667eea">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelModalBtn">Cancelar</button>
+                <button class="btn btn-primary" id="confirmAddSubjectBtn">Crear</button>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
