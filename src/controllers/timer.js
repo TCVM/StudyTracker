@@ -1,10 +1,12 @@
 import { todayKey, xpToNextLevel, showNotification } from '../utils/helpers.js';
 import { saveData } from '../utils/storage.js';
 import { recordSession, updateDailyStats } from '../modules/stats.js';
+import { checkAchievements } from '../modules/achievements.js';
 
 let timerIntervalId = null;
 let currentSubject = null;
 let appState = null;
+let lastAchievementsCheckMs = 0;
 
 export function setCurrentSubject(subject) {
     currentSubject = subject;
@@ -49,6 +51,10 @@ export function startTimer() {
         timerIntervalId = setInterval(onTimerTick, 1000);
     }
 
+    if (appState) {
+        checkAchievements(appState, { activity: 'timer_start', currentSubject, timer: t, nowMs: now });
+    }
+
     updateTimerUi();
     if (appState) saveData(appState, true);
 }
@@ -72,6 +78,10 @@ export function stopTimer() {
     t.running = false;
     t.lastTickMs = null;
     t.pausedAtMs = null;
+
+    if (appState) {
+        checkAchievements(appState, { activity: 'timer_stop', currentSubject, timer: t, nowMs: Date.now() });
+    }
 
     if (t.sessionSeconds > currentSubject.meta.longestSessionSeconds) {
         currentSubject.meta.longestSessionSeconds = t.sessionSeconds;
@@ -129,6 +139,11 @@ function onTimerTick() {
 
     // Actualizar estadísticas diarias en ambos niveles
     updateDailyStats(appState, currentSubject, deltaSeconds);
+
+    if (appState && now - lastAchievementsCheckMs >= 10000) {
+        lastAchievementsCheckMs = now;
+        checkAchievements(appState, { activity: 'timer_tick', currentSubject, timer: t, nowMs: now });
+    }
 
     if (t.xpCarrySeconds >= 60) {
         const minutes = Math.floor(t.xpCarrySeconds / 60);

@@ -1,6 +1,5 @@
 import { ACHIEVEMENTS } from '../utils/constants.js';
 import { showNotification } from '../utils/helpers.js';
-import { todayKey } from '../utils/helpers.js';
 import { saveData } from '../utils/storage.js';
 
 export function unlockAchievement(appState, achievementId) {
@@ -18,85 +17,164 @@ export function unlockAchievement(appState, achievementId) {
     return true;
 }
 
-export function checkAchievements(appState) {
-    const totalFocus = appState.globalMeta.totalFocusSeconds;
-    
-    // Obtener estadísticas globales
+function dateKeyFromDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function addDays(date, deltaDays) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + deltaDays);
+    return d;
+}
+
+function getConsecutiveDayStreak(dailyFocusSeconds, now) {
+    if (!dailyFocusSeconds || typeof dailyFocusSeconds !== 'object') return 0;
+
+    let streak = 0;
+    for (let i = 0; i < 370; i++) {
+        const key = dateKeyFromDate(addDays(now, -i));
+        const seconds = dailyFocusSeconds[key] ?? 0;
+        if (seconds > 0) streak += 1;
+        else break;
+    }
+    return streak;
+}
+
+function getDaysStudiedInMonth(dailyFocusSeconds, now) {
+    if (!dailyFocusSeconds || typeof dailyFocusSeconds !== 'object') return 0;
+
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `${y}-${m}-`;
+
+    let days = 0;
+    for (const [key, seconds] of Object.entries(dailyFocusSeconds)) {
+        if (!key.startsWith(prefix)) continue;
+        if ((seconds ?? 0) > 0) days += 1;
+    }
+    return days;
+}
+
+function getSubjectCompletionPercentage(subject) {
+    if (!subject || !Array.isArray(subject.categories)) return 0;
+
     let totalTopics = 0;
     let completedTopics = 0;
-    
+
+    for (const category of subject.categories) {
+        totalTopics += category.topics.length;
+        completedTopics += category.topics.filter(t => t.completed).length;
+    }
+
+    return totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+}
+
+export function checkAchievements(appState, context = null) {
+    const totalFocus = appState.globalMeta.totalFocusSeconds;
+    const now = new Date(context?.nowMs ?? Date.now());
+    const activity = context?.activity ?? 'generic';
+    const isTimerEvent = activity.startsWith('timer');
+    const streakSeconds =
+        context?.streakSeconds ??
+        context?.timer?.streakSeconds ??
+        context?.currentSubject?.meta?.timer?.streakSeconds ??
+        0;
+
+    let totalTopics = 0;
+    let completedTopics = 0;
+
     for (const subject of appState.subjects) {
         for (const category of subject.categories) {
             totalTopics += category.topics.length;
             completedTopics += category.topics.filter(t => t.completed).length;
         }
     }
-    
+
     const completionPercentage = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
-    const unlockedCount = Object.keys(appState.globalMeta.achievements).length;
     const sessionsCount = appState.globalMeta.sessionsCount;
-    
+
+    const currentSubjectPercentage = context?.currentSubject ? getSubjectCompletionPercentage(context.currentSubject) : 0;
+    const bestSubjectPercentage = appState.subjects.reduce((max, s) => Math.max(max, getSubjectCompletionPercentage(s)), 0);
+    const progressPercentage = Math.max(completionPercentage, currentSubjectPercentage, bestSubjectPercentage);
+
     for (const a of ACHIEVEMENTS) {
         if (appState.globalMeta.achievements[a.id]) continue;
-        
-        // Logros de tiempo total de enfoque
+
         if (a.kind === 'total' && totalFocus >= a.seconds) {
             unlockAchievement(appState, a.id);
             continue;
         }
-        
-        // Logros de progreso académico
+
+        if (a.kind === 'streak' && isTimerEvent && streakSeconds >= a.seconds) {
+            unlockAchievement(appState, a.id);
+            continue;
+        }
+
         if (a.kind === 'progress') {
             if (a.condition === 'first_topic' && completedTopics >= 1) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '25_percent' && completionPercentage >= 25) {
+            } else if (a.condition === '25_percent' && progressPercentage >= 25) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '50_percent' && completionPercentage >= 50) {
+            } else if (a.condition === '50_percent' && progressPercentage >= 50) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '75_percent' && completionPercentage >= 75) {
+            } else if (a.condition === '75_percent' && progressPercentage >= 75) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '100_percent' && completionPercentage >= 100) {
+            } else if (a.condition === '100_percent' && progressPercentage >= 100) {
                 unlockAchievement(appState, a.id);
             }
             continue;
         }
-        
-        // Logros de categorías específicas
+
+        if (a.kind === 'time' && isTimerEvent) {
+            if (a.condition === 'before_8am' && now.getHours() < 8) {
+                unlockAchievement(appState, a.id);
+            } else if (a.condition === 'after_10pm' && now.getHours() >= 22) {
+                unlockAchievement(appState, a.id);
+            } else if (a.condition === '3_days_streak') {
+                const dayStreak = getConsecutiveDayStreak(appState.globalMeta.dailyFocusSeconds, now);
+                if (dayStreak >= 3) unlockAchievement(appState, a.id);
+            } else if (a.condition === '7_days_streak') {
+                const dayStreak = getConsecutiveDayStreak(appState.globalMeta.dailyFocusSeconds, now);
+                if (dayStreak >= 7) unlockAchievement(appState, a.id);
+            } else if (a.condition === '20_days_month') {
+                const daysInMonth = getDaysStudiedInMonth(appState.globalMeta.dailyFocusSeconds, now);
+                if (daysInMonth >= 20) unlockAchievement(appState, a.id);
+            }
+            continue;
+        }
+
         if (a.kind === 'topic') {
-            let categoryCompleted = false;
-            const categoryNames = {
-                'complete_architecture': 'Estructura del Computador',
-                'complete_memory': 'Jerarquía de Memoria',
-                'complete_instructions': 'Repertorio de Instrucciones',
-                'complete_io_buses': 'Control de E/S y Buses',
-                'complete_pipeline': 'Segmentación y Paralelismo',
-                'complete_multiproc': 'Sistemas de Múltiples Procesadores'
+            const categoryIdByCondition = {
+                complete_architecture: 1,
+                complete_memory: 2,
+                complete_instructions: 3,
+                complete_io_buses: 4,
+                complete_pipeline: 5,
+                complete_multiproc: 6
             };
-            
-            const categoryName = categoryNames[a.condition];
-            if (categoryName) {
+
+            const categoryId = categoryIdByCondition[a.condition] ?? null;
+            if (categoryId) {
                 for (const subject of appState.subjects) {
-                    const category = subject.categories.find(c => c.name.includes(categoryName));
+                    const category = subject.categories.find(c => c.id === categoryId);
                     if (category && category.topics.every(t => t.completed)) {
-                        categoryCompleted = true;
+                        unlockAchievement(appState, a.id);
                         break;
                     }
                 }
             }
-            
-            if (categoryCompleted) {
-                unlockAchievement(appState, a.id);
-            }
             continue;
         }
-        
-        // Logros especiales
+
         if (a.kind === 'special') {
             if (a.condition === 'first_10_xp' && appState.globalMeta.xp >= 10) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '5_achievements' && unlockedCount >= 5) {
+            } else if (a.condition === '5_achievements' && Object.keys(appState.globalMeta.achievements).length >= 5) {
                 unlockAchievement(appState, a.id);
-            } else if (a.condition === '15_achievements' && unlockedCount >= 15) {
+            } else if (a.condition === '15_achievements' && Object.keys(appState.globalMeta.achievements).length >= 15) {
                 unlockAchievement(appState, a.id);
             } else if (a.condition === '10_sessions' && sessionsCount >= 10) {
                 unlockAchievement(appState, a.id);
@@ -108,7 +186,6 @@ export function checkAchievements(appState) {
     }
 }
 
-// Funciones auxiliares de efectos visuales
 function particleBurst(target, color) {
     const rect = (target && target.getBoundingClientRect) ? target.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
     const originX = rect.left + rect.width * 0.6;

@@ -1,5 +1,5 @@
 import { escapeHtml, formatHMS, prettyTime, formatDateTime } from '../utils/helpers.js';
-import { SKILLS, MAX_SESSIONS_DISPLAY } from '../utils/constants.js';
+import { SKILLS, MAX_SESSIONS_DISPLAY, ACHIEVEMENTS } from '../utils/constants.js';
 
 let currentSubject = null;
 
@@ -44,6 +44,63 @@ export function selectSubject(subjectId) {
     // This will be implemented in the main controller
 }
 
+function ensureHomeAchievementsPanel() {
+    const panelId = 'homeAchievementsPanel';
+    if (document.getElementById(panelId)) return;
+
+    const homeView = document.getElementById('homeView');
+    if (!homeView) return;
+
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.id = panelId;
+    panel.innerHTML = `
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">Logros</h2>
+                <div class="panel-subtitle">Generales y por materia</div>
+            </div>
+            <button class="btn btn-secondary btn-small" id="homeAchievementsToggleBtn" type="button">Mostrar</button>
+        </div>
+        <div class="stats-grid" id="homeAchievementsSummary"></div>
+        <div class="achievements-grid" id="homeAchievementsContainer" hidden></div>
+    `;
+
+    const insertBeforeEl = document.getElementById('recentSubjectsGrid')?.closest('.recent-subjects') ?? null;
+    if (insertBeforeEl && insertBeforeEl.parentNode) {
+        insertBeforeEl.parentNode.insertBefore(panel, insertBeforeEl);
+    } else {
+        homeView.querySelector('.home-container')?.appendChild(panel);
+    }
+
+    const toggleBtn = document.getElementById('homeAchievementsToggleBtn');
+    const listEl = document.getElementById('homeAchievementsContainer');
+    if (toggleBtn && listEl) {
+        toggleBtn.addEventListener('click', () => {
+            listEl.hidden = !listEl.hidden;
+            toggleBtn.textContent = listEl.hidden ? 'Mostrar' : 'Ocultar';
+        });
+    }
+
+    const totalAchievementsEl = document.getElementById('totalAchievements');
+    if (totalAchievementsEl && !totalAchievementsEl.dataset.clickBound) {
+        totalAchievementsEl.dataset.clickBound = '1';
+        totalAchievementsEl.style.cursor = 'pointer';
+        totalAchievementsEl.title = 'Ver logros';
+        totalAchievementsEl.addEventListener('click', () => {
+            const list = document.getElementById('homeAchievementsContainer');
+            const btn = document.getElementById('homeAchievementsToggleBtn');
+            if (list) list.hidden = false;
+            if (btn) btn.textContent = 'Ocultar';
+            try {
+                document.getElementById(panelId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch {
+                // ignore
+            }
+        });
+    }
+}
+
 export function renderHomePage(appState) {
     const totalSubjects = appState.subjects.length;
     const totalAchievements = Object.keys(appState.globalMeta.achievements).length;
@@ -60,6 +117,7 @@ export function renderHomePage(appState) {
     totalTimeEl.textContent = totalTime;
     globalProgressEl.textContent = `${globalProgress}%`;
     
+    ensureHomeAchievementsPanel();
     renderRecentSubjects(appState);
 }
 
@@ -296,17 +354,122 @@ export function renderStats() {
     focusTodayText.textContent = `Hoy: ${Math.floor(focusTodaySeconds / 60)}m`;
 }
 
-export function renderAchievements() {
-    if (!currentSubject) {
-        const achievementsContainer = document.getElementById('achievementsContainer');
+function getAchievementGroupLabel(kind) {
+    const labels = {
+        progress: 'Progreso',
+        total: 'Tiempo total',
+        streak: 'Racha de sesiÃ³n',
+        time: 'Horarios y consistencia',
+        special: 'Especiales',
+        topic: 'Por materia'
+    };
+    return labels[kind] ?? 'Logros';
+}
+
+function getTopicAchievementCategoryIncludes(condition) {
+    const categoryNames = {
+        complete_architecture: 'Estructura del Computador',
+        complete_memory: 'JerarquÃ­a de Memoria',
+        complete_instructions: 'Repertorio de Instrucciones',
+        complete_io_buses: 'Control de E/S y Buses',
+        complete_pipeline: 'SegmentaciÃ³n y Paralelismo',
+        complete_multiproc: 'Sistemas de MÃºltiples Procesadores'
+    };
+    return categoryNames[condition] ?? null;
+}
+
+function isTopicAchievementForSubject(achievement, subject) {
+    if (achievement.kind !== 'topic') return false;
+    if (!subject || !Array.isArray(subject.categories)) return false;
+
+    const categoryIdByCondition = {
+        complete_architecture: 1,
+        complete_memory: 2,
+        complete_instructions: 3,
+        complete_io_buses: 4,
+        complete_pipeline: 5,
+        complete_multiproc: 6
+    };
+
+    const categoryId = categoryIdByCondition[achievement.condition] ?? null;
+    if (!categoryId) return false;
+    return subject.categories.some(c => c.id === categoryId);
+}
+
+function createAchievementGroupTitle(text) {
+    const title = document.createElement('div');
+    title.className = 'achievement-group-title section-title';
+    title.textContent = text;
+    return title;
+}
+
+function appendAchievementCard(container, a, unlockedAt) {
+    const unlocked = !!unlockedAt;
+    const badge = unlocked ? '<span class="badge unlocked">Desbloqueado</span>' : '<span class="badge">Bloqueado</span>';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const meta = unlocked ? `<div class="card-meta"><span>Desbloqueado: ${escapeHtml(formatDateTime(unlockedAt))}</span></div>` : '';
+
+    card.innerHTML = `
+        <div class="card-title">${escapeHtml(a.title)} ${badge}</div>
+        <div class="card-desc">${escapeHtml(a.desc)}</div>
+        ${meta}
+    `;
+
+    container.appendChild(card);
+}
+
+function renderAchievementsGrid(appState, achievementsContainer, options = {}) {
+    achievementsContainer.innerHTML = '';
+
+    const unlockedById = appState.globalMeta?.achievements ?? {};
+    const allAchievements = Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS : [];
+
+    const kindOrder = ['progress', 'total', 'streak', 'time', 'special'];
+    for (const kind of kindOrder) {
+        const list = allAchievements.filter(a => a.kind === kind);
+        if (list.length === 0) continue;
+
+        achievementsContainer.appendChild(createAchievementGroupTitle(getAchievementGroupLabel(kind)));
+        for (const a of list) {
+            appendAchievementCard(achievementsContainer, a, unlockedById[a.id]);
+        }
+    }
+
+    const includeSubjectGroups = options.includeSubjectGroups ?? true;
+    if (!includeSubjectGroups) return;
+
+    const subjects = Array.isArray(appState.subjects) ? appState.subjects : [];
+    const topicAchievements = allAchievements.filter(a => a.kind === 'topic');
+
+    for (const subject of subjects) {
+        const list = topicAchievements.filter(a => isTopicAchievementForSubject(a, subject));
+        if (list.length === 0) continue;
+
+        const subjectTitle = `Materia: ${subject.icon ? `${subject.icon} ` : ''}${subject.name ?? 'Materia'}`;
+        achievementsContainer.appendChild(createAchievementGroupTitle(subjectTitle));
+
+        for (const a of list) {
+            appendAchievementCard(achievementsContainer, a, unlockedById[a.id]);
+        }
+    }
+}
+
+export function renderAchievements(appState) {
+    const achievementsContainer = document.getElementById('achievementsContainer');
+    if (!achievementsContainer) return;
+
+    if (!appState) {
         achievementsContainer.innerHTML = '';
         return;
     }
 
-    const achievementsContainer = document.getElementById('achievementsContainer');
-    achievementsContainer.innerHTML = '';
+    renderAchievementsGrid(appState, achievementsContainer, { includeSubjectGroups: true });
+    return;
 
-    const ACHIEVEMENTS = [
+    const ACHIEVEMENTS_LOCAL = [
         { id: 'progress_first_topic', title: 'Primeros pasos', desc: 'Completar el primer tema' },
         { id: 'progress_25_percent', title: 'Cuarto de camino', desc: 'Completar el 25% del contenido' },
         { id: 'progress_50_percent', title: 'Mitad del camino', desc: 'Completar el 50% del contenido' },
@@ -315,7 +478,7 @@ export function renderAchievements() {
     ];
 
     for (const a of ACHIEVEMENTS) {
-        const unlockedAt = currentSubject.meta.achievements[a.id];
+        const unlockedAt = appState.globalMeta.achievements[a.id];
         const unlocked = !!unlockedAt;
         const badge = unlocked ? '<span class="badge unlocked">Desbloqueado</span>' : '<span class="badge">Bloqueado</span>';
 
@@ -328,6 +491,67 @@ export function renderAchievements() {
 
         achievementsContainer.appendChild(card);
     }
+}
+
+export function renderHomeAchievements(appState) {
+    const summaryEl = document.getElementById('homeAchievementsSummary');
+    const homeAchievementsContainer = document.getElementById('homeAchievementsContainer');
+
+    if (!summaryEl || !homeAchievementsContainer) return;
+
+    if (!appState) {
+        summaryEl.innerHTML = '';
+        homeAchievementsContainer.innerHTML = '';
+        return;
+    }
+
+    const unlockedById = appState.globalMeta?.achievements ?? {};
+    const unlockedCount = Object.keys(unlockedById).length;
+    const totalCount = Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS.length : 0;
+
+    const topicAchievements = ACHIEVEMENTS.filter(a => a.kind === 'topic');
+    const subjects = Array.isArray(appState.subjects) ? appState.subjects : [];
+
+    const perSubject = subjects
+        .map(subject => {
+            const applicable = topicAchievements.filter(a => isTopicAchievementForSubject(a, subject));
+            const unlocked = applicable.filter(a => !!unlockedById[a.id]).length;
+            return { subject, total: applicable.length, unlocked };
+        })
+        .filter(x => x.total > 0);
+
+    const recent = Object.entries(unlockedById)
+        .map(([id, ts]) => ({ id, ts }))
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 3)
+        .map(x => {
+            const a = ACHIEVEMENTS.find(v => v.id === x.id);
+            return a ? { title: a.title, ts: x.ts } : null;
+        })
+        .filter(Boolean);
+
+    summaryEl.innerHTML = `
+        <div class="card">
+            <div class="card-title">Global</div>
+            <div class="card-desc">${unlockedCount} / ${totalCount} desbloqueados</div>
+        </div>
+        ${perSubject.map(x => `
+            <div class="card">
+                <div class="card-title">${escapeHtml(x.subject.icon ? `${x.subject.icon} ` : '')}${escapeHtml(x.subject.name ?? 'Materia')}</div>
+                <div class="card-desc">${x.unlocked} / ${x.total} logros de esta materia</div>
+            </div>
+        `).join('')}
+        ${recent.length ? `
+            <div class="card">
+                <div class="card-title">Ãšltimos desbloqueados</div>
+                <div class="card-desc">
+                    ${recent.map(r => `${escapeHtml(r.title)} Â· ${escapeHtml(formatDateTime(r.ts))}`).join('<br>')}
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    renderAchievementsGrid(appState, homeAchievementsContainer, { includeSubjectGroups: true });
 }
 
 export function updateXpUi() {
@@ -455,10 +679,11 @@ export function renderAllNonTimer(appState) {
     renderMap();
     renderSkillTree();
     renderStats();
-    renderAchievements();
+    renderAchievements(appState);
     renderSessions();
     renderSubjectList(appState);
     renderHomePage(appState);
+    renderHomeAchievements(appState);
 }
 
 export function renderAll(appState) {

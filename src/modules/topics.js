@@ -20,7 +20,7 @@ export function toggleTopicCompleted(appState, currentSubject, categoryId, topic
         topic.completedAt = now;
         topic.reviews = [];
         completeTopicXp(appState, currentSubject, 22);
-        checkAchievements(appState);
+        checkAchievements(appState, { activity: 'topic', currentSubject, nowMs: Date.now() });
     } else {
         // Desmarcar tema completado
         topic.completed = false;
