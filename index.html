@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Tracker - Sistema de Estudio General</title>
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -83,34 +86,47 @@
                         </div>
                     </div>
 
-                    <div class="quick-actions">
-                        <h2>Acciones Rápidas</h2>
-                        <div class="actions-grid">
-                            <button class="action-card" id="quickAddSubject">
-                                <div class="action-icon">➕</div>
-                                <div class="action-title">Nueva Materia</div>
-                                <div class="action-desc">Añade una nueva materia a tu plan de estudios</div>
-                            </button>
-                            
-                            <button class="action-card" id="quickStartSession">
-                                <div class="action-icon">⏵️</div>
-                                <div class="action-title">Iniciar Sesión</div>
-                                <div class="action-desc">Comienza a estudiar con el timer</div>
-                            </button>
-                            
-                            <button class="action-card" id="quickViewStats">
-                                <div class="action-icon">📉</div>
-                                <div class="action-title">Ver Estadísticas</div>
-                                <div class="action-desc">Analiza tu progreso detallado</div>
-                            </button>
+                     <div class="quick-actions">
+                         <h2>Acciones Rápidas</h2>
+                         <div class="actions-grid">
+                             <button class="action-card" id="quickAddSubject">
+                                 <div class="action-icon">➕</div>
+                                 <div class="action-title">Nueva Materia</div>
+                                 <div class="action-desc">Añade una nueva materia a tu plan de estudios</div>
+                             </button>
+                             
+                             <button class="action-card" id="quickStartSession">
+                                 <div class="action-icon">⏵️</div>
+                                 <div class="action-title">Iniciar Sesión</div>
+                                 <div class="action-desc">Comienza a estudiar con el timer</div>
+                             </button>
+                             
+                             <button class="action-card" id="quickViewStats">
+                                 <div class="action-icon">📉</div>
+                                 <div class="action-title">Ver Estadísticas</div>
+                                 <div class="action-desc">Analiza tu progreso detallado</div>
+                             </button>
 
-                            <button class="action-card" id="quickResetAll">
-                                <div class="action-icon">🧨</div>
-                                <div class="action-title">Reiniciar TODO</div>
-                                <div class="action-desc">Borra todas las materias y el progreso global</div>
-                            </button>
-                        </div>
-                    </div>
+                             <button class="action-card" id="quickResetAll">
+                                 <div class="action-icon">🧨</div>
+                                 <div class="action-title">Reiniciar TODO</div>
+                                 <div class="action-desc">Borra todas las materias y el progreso global</div>
+                             </button>
+
+                             <button class="action-card" id="quickExportBackup" type="button">
+                                 <div class="action-icon">💾</div>
+                                 <div class="action-title">Exportar Backup</div>
+                                 <div class="action-desc">Descarga un .json con tu progreso completo</div>
+                             </button>
+
+                             <button class="action-card" id="quickImportBackup" type="button">
+                                 <div class="action-icon">📥</div>
+                                 <div class="action-title">Importar Backup</div>
+                                 <div class="action-desc">Restaura materias, logros y progreso desde .json</div>
+                             </button>
+                         </div>
+                         <input id="backupImportFile" type="file" accept="application/json" hidden>
+                     </div>
 
                     <div class="recent-subjects">
                         <h2>Materias Recientes</h2>
@@ -523,5 +539,13 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+      (function () {
+        if (!('serviceWorker' in navigator)) return;
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').catch(function () {});
+        });
+      })();
+    </script>
 </body>
 </html>

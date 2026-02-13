@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Study Tracker">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g)"/>
+  <g fill="none" stroke="#93c5fd" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M172 170h168"/>
+    <path d="M172 234h168"/>
+    <path d="M172 298h112"/>
+    <path d="M176 366c22-18 50-28 80-28 44 0 84 22 108 56"/>
+  </g>
+  <circle cx="344" cy="298" r="16" fill="#93c5fd"/>
+</svg>

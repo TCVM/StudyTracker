@@ -372,6 +372,9 @@ const quickAddSubject = document.getElementById('quickAddSubject');
 const quickStartSession = document.getElementById('quickStartSession');
 const quickViewStats = document.getElementById('quickViewStats');
 const quickResetAll = document.getElementById('quickResetAll');
+const quickExportBackup = document.getElementById('quickExportBackup');
+const quickImportBackup = document.getElementById('quickImportBackup');
+const backupImportFile = document.getElementById('backupImportFile');
 
 const MAX_SESSIONS_DISPLAY = 20;
 
@@ -634,6 +637,70 @@ function saveData(force = false) {
     } catch (e) {
         console.error('✗ Error al guardar progreso:', e);
     }
+}
+
+function buildBackupPayload() {
+    return {
+        app: 'StudyTracker',
+        schema: 'backup',
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        data: appState
+    };
+}
+
+function downloadJson(filename, obj) {
+    const text = JSON.stringify(obj, null, 2);
+    const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
+function exportBackupToFile() {
+    const iso = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-');
+    const filename = `study-tracker-backup-${iso}.json`;
+    downloadJson(filename, buildBackupPayload());
+    showNotification('Backup exportado.');
+}
+
+async function importBackupText(text) {
+    const parsed = safeJsonParse(String(text ?? '').trim());
+    if (!parsed) {
+        showNotification('No se pudo importar: JSON invÃ¡lido.');
+        return;
+    }
+
+    const maybeState = parsed?.data ?? parsed?.appState ?? parsed;
+    const normalized = normalizeLoadedState(maybeState);
+
+    const ok = await showConfirmModalV2({
+        title: 'ðŸ“¥ Importar Backup',
+        text: 'Esto reemplaza tu progreso actual (materias, sesiones, XP y logros).',
+        confirmText: 'Importar',
+        cancelText: 'Cancelar',
+        fallbackText: 'Â¿Importar backup? Esto reemplaza tu progreso actual.'
+    });
+    if (!ok) return;
+
+    appState = normalized;
+    currentSubject = null;
+    setActiveView('homeView');
+    document.querySelectorAll('.nav-item').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === 'homeView');
+    });
+
+    saveData(true);
+    renderAll();
+    showNotification('Backup importado.');
 }
 
 async function resetData() {
@@ -3319,6 +3386,36 @@ function setupEventListeners() {
 
     if (quickResetAll) {
         quickResetAll.addEventListener('click', resetData);
+    }
+
+    if (quickExportBackup) {
+        quickExportBackup.addEventListener('click', exportBackupToFile);
+    }
+
+    if (quickImportBackup) {
+        quickImportBackup.addEventListener('click', () => {
+            if (backupImportFile) backupImportFile.click();
+            else showNotification('Import no disponible (input file faltante).');
+        });
+    }
+
+    if (backupImportFile) {
+        backupImportFile.addEventListener('change', () => {
+            const file = backupImportFile.files && backupImportFile.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                importBackupText(reader.result);
+            };
+            reader.onerror = () => {
+                showNotification('No se pudo leer el archivo.');
+            };
+            reader.readAsText(file);
+
+            // Permite importar el mismo archivo dos veces seguidas.
+            backupImportFile.value = '';
+        });
     }
 
     document.querySelectorAll('.nav-item[data-view="homeView"]').forEach(btn => {
