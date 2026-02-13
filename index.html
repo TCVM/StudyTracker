@@ -34,6 +34,10 @@
                         <span class="nav-icon">🏠</span>
                         <span class="nav-text">Inicio</span>
                     </button>
+                    <button class="nav-item" data-view="sharedView" type="button">
+                        <span class="nav-icon">🧩</span>
+                        <span class="nav-text">Compartidas</span>
+                    </button>
                 </div>
                 
                 <div class="nav-section">
@@ -135,19 +139,47 @@
                 </div>
             </section>
 
-            <!-- Página de Materia -->
-            <section class="view" id="subjectView">
+            <!-- Materias compartidas -->
+            <section class="view" id="sharedView">
                 <div class="container">
                     <header class="header">
                         <div class="header-content">
                             <div class="subject-header">
                                 <div class="subject-info">
-                                    <h1 class="title" id="subjectTitle">Materia</h1>
-                                    <p class="subtitle" id="subjectSubtitle">Progreso de estudio</p>
+                                    <h1 class="title">Materias compartidas</h1>
+                                    <p class="subtitle">Plantillas que podés agregar a tu estudio con 1 click</p>
                                 </div>
-                                <div class="subject-actions">
-                                    <button class="btn btn-secondary" id="editSubjectBtn">✏️ Editar</button>
-                                    <button class="btn btn-secondary" id="deleteSubjectBtn">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="shared-subjects" id="sharedSubjectsGrid"></div>
+                    <div class="shared-empty" id="sharedSubjectsEmpty" hidden>
+                        No hay materias compartidas todavía.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Página de Materia -->
+            <section class="view" id="subjectView">
+                <div class="container">
+                    <header class="header">
+                        <div class="header-content">
+                            <div class="subject-hero" id="subjectHero">
+                                <img id="subjectBannerImg" alt="" loading="lazy" decoding="async" hidden>
+                                <div class="subject-hero-overlay">
+                                    <div class="subject-header subject-header-on-hero">
+                                        <div class="subject-info">
+                                            <h1 class="title" id="subjectTitle">Materia</h1>
+                                            <p class="subtitle" id="subjectSubtitle">Progreso de estudio</p>
+                                        </div>
+                                        <div class="subject-actions">
+                                            <button class="btn btn-secondary" id="editSubjectBtn" type="button">✏️ Editar</button>
+                                            <button class="btn btn-secondary" id="shareSubjectBtn" type="button">📤 Compartir</button>
+                                            <button class="btn btn-secondary" id="exportSubjectBtn" type="button">&#8595; Exportar</button>
+                                            <button class="btn btn-secondary" id="deleteSubjectBtn" type="button">🗑️ Eliminar</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -347,6 +379,11 @@
                     <label for="subjectColor">Color</label>
                     <input type="color" id="subjectColor" value="#667eea">
                 </div>
+                <div class="form-group">
+                    <label for="subjectBannerUrl">Banner (URL)</label>
+                    <input type="text" id="subjectBannerUrl" placeholder="Ej: https://... o ./banners/materia.jpg">
+                    <div class="import-subtitle">Opcional. Se muestra en la parte superior de la materia.</div>
+                </div>
 
                 <div class="builder">
                     <div class="builder-header">
@@ -458,6 +495,11 @@
                     <div class="form-group">
                         <label for="editSubjectColor">Color</label>
                         <input type="color" id="editSubjectColor" value="#667eea">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSubjectBannerUrl">Banner (URL)</label>
+                        <input type="text" id="editSubjectBannerUrl" placeholder="Ej: https://... o ./banners/materia.jpg">
+                        <div class="import-subtitle">Opcional. Se muestra arriba del progreso de la materia.</div>
                     </div>
                 </div>
 

@@ -312,7 +312,10 @@ const confirmAddSubjectBtn = document.getElementById('confirmAddSubjectBtn');
 const subjectNameInput = document.getElementById('subjectName');
 const subjectIconInput = document.getElementById('subjectIcon');
 const subjectColorInput = document.getElementById('subjectColor');
+const subjectBannerUrlInput = document.getElementById('subjectBannerUrl');
 const subjectTitle = document.getElementById('subjectTitle');
+const subjectHero = document.getElementById('subjectHero');
+const subjectBannerImg = document.getElementById('subjectBannerImg');
 
 const addSubjectTabManual = document.getElementById('addSubjectTabManual');
 const addSubjectTabImport = document.getElementById('addSubjectTabImport');
@@ -331,6 +334,8 @@ const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
 const confirmModalConfirmBtn = document.getElementById('confirmModalConfirmBtn');
 const subjectSubtitle = document.getElementById('subjectSubtitle');
 const editSubjectBtn = document.getElementById('editSubjectBtn');
+const shareSubjectBtn = document.getElementById('shareSubjectBtn');
+const exportSubjectBtn = document.getElementById('exportSubjectBtn');
 const deleteSubjectBtn = document.getElementById('deleteSubjectBtn');
 
 const editSubjectModal = document.getElementById('editSubjectModal');
@@ -348,6 +353,7 @@ const editSubjectResetSection = document.getElementById('editSubjectResetSection
 const editSubjectNameInput = document.getElementById('editSubjectName');
 const editSubjectIconInput = document.getElementById('editSubjectIcon');
 const editSubjectColorInput = document.getElementById('editSubjectColor');
+const editSubjectBannerUrlInput = document.getElementById('editSubjectBannerUrl');
 const editAddCategoryBtn = document.getElementById('editAddCategoryBtn');
 const editSubjectCategoriesBuilder = document.getElementById('editSubjectCategoriesBuilder');
 const resetSubjectBtn = document.getElementById('resetSubjectBtn');
@@ -375,6 +381,8 @@ const quickResetAll = document.getElementById('quickResetAll');
 const quickExportBackup = document.getElementById('quickExportBackup');
 const quickImportBackup = document.getElementById('quickImportBackup');
 const backupImportFile = document.getElementById('backupImportFile');
+const sharedSubjectsGrid = document.getElementById('sharedSubjectsGrid');
+const sharedSubjectsEmpty = document.getElementById('sharedSubjectsEmpty');
 
 const MAX_SESSIONS_DISPLAY = 20;
 
@@ -382,6 +390,263 @@ let addSubjectDraft = null;
 let pendingConfirmResolve = null;
 let editSubjectDraft = null;
 let editingSubjectId = null;
+let sharedSubjects = [];
+let sharedSubjectsBase = [];
+let sharedSubjectsLocal = [];
+let sharedSubjectsLoaded = false;
+let sharedSubjectsLoadError = null;
+
+const LOCAL_SHARED_SUBJECTS_KEY = 'studyTrackerSharedSubjectsV1';
+
+function normalizeBannerUrl(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    return raw;
+}
+
+function renderSubjectBanner() {
+    if (!subjectHero || !subjectBannerImg) return;
+    if (!currentSubject) {
+        subjectBannerImg.hidden = true;
+        subjectBannerImg.removeAttribute('src');
+        return;
+    }
+
+    const url = normalizeBannerUrl(currentSubject.bannerUrl);
+    if (!url) {
+        subjectBannerImg.hidden = true;
+        subjectBannerImg.removeAttribute('src');
+        return;
+    }
+
+    subjectBannerImg.hidden = false;
+    subjectBannerImg.src = url;
+    subjectBannerImg.alt = `Banner de ${currentSubject.name ?? 'materia'}`;
+}
+
+function loadLocalSharedSubjects() {
+    const raw = localStorage.getItem(LOCAL_SHARED_SUBJECTS_KEY);
+    const parsed = raw ? safeJsonParse(raw) : null;
+    if (Array.isArray(parsed)) return parsed;
+    return [];
+}
+
+function saveLocalSharedSubjects(list) {
+    try {
+        localStorage.setItem(LOCAL_SHARED_SUBJECTS_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+    } catch {
+        // ignore
+    }
+}
+
+function refreshSharedSubjectsMerged() {
+    const base = Array.isArray(sharedSubjectsBase) ? sharedSubjectsBase : [];
+    const local = Array.isArray(sharedSubjectsLocal) ? sharedSubjectsLocal : [];
+    sharedSubjects = [...local, ...base];
+}
+
+function estimateSharedSubjectSize(subject) {
+    try {
+        const categories = Array.isArray(subject?.categories) ? subject.categories : [];
+        const topics = categories.reduce((sum, c) => sum + (Array.isArray(c?.topics) ? c.topics.length : 0), 0);
+        return { categories: categories.length, topics };
+    } catch {
+        return { categories: 0, topics: 0 };
+    }
+}
+
+function renderSharedSubjects() {
+    if (!sharedSubjectsGrid) return;
+
+    if (!sharedSubjectsLoaded) {
+        sharedSubjectsGrid.innerHTML = '<div class="shared-empty">Cargando materias compartidas…</div>';
+        if (sharedSubjectsEmpty) sharedSubjectsEmpty.hidden = true;
+        return;
+    }
+
+    const list = Array.isArray(sharedSubjects) ? sharedSubjects : [];
+
+    // If the static list fails to load, still allow showing locally shared subjects.
+    if (sharedSubjectsLoadError && list.length === 0) {
+        sharedSubjectsGrid.innerHTML = '<div class="shared-empty">No se pudieron cargar las materias compartidas.</div>';
+        if (sharedSubjectsEmpty) sharedSubjectsEmpty.hidden = true;
+        return;
+    }
+
+    if (list.length === 0) {
+        sharedSubjectsGrid.innerHTML = '';
+        if (sharedSubjectsEmpty) sharedSubjectsEmpty.hidden = false;
+        return;
+    }
+
+    if (sharedSubjectsEmpty) sharedSubjectsEmpty.hidden = true;
+
+    sharedSubjectsGrid.innerHTML = '';
+    list.forEach((s, idx) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'shared-subject-card';
+        card.dataset.sharedIndex = String(idx);
+
+        const bannerUrl = normalizeBannerUrl(s?.bannerUrl);
+        const name = String(s?.name ?? '').trim() || 'Materia';
+        const icon = String(s?.icon ?? '').trim() || 'ðŸ“š';
+        const size = estimateSharedSubjectSize(s);
+
+        const banner = document.createElement('div');
+        banner.className = 'shared-subject-banner';
+        if (bannerUrl) {
+            const img = document.createElement('img');
+            img.alt = `Banner de ${name}`;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.src = bannerUrl;
+            banner.appendChild(img);
+        }
+        card.appendChild(banner);
+
+        const meta = document.createElement('div');
+        meta.className = 'shared-subject-meta';
+        meta.innerHTML = `
+            <div class="shared-subject-name">${escapeHtml(icon)} ${escapeHtml(name)}</div>
+            <div class="shared-subject-chip">${size.categories} temas · ${size.topics} items</div>
+        `;
+        card.appendChild(meta);
+
+        card.addEventListener('click', () => {
+            importSharedSubjectIntoApp(s);
+        });
+
+        sharedSubjectsGrid.appendChild(card);
+    });
+}
+
+function flattenTopicsFromPayload(topics, depth = 1) {
+    const result = [];
+    const list = Array.isArray(topics) ? topics : [];
+    for (const item of list) {
+        if (typeof item === 'string') {
+            const name = item.trim();
+            if (name) result.push({ name, level: depth });
+            continue;
+        }
+
+        if (!item || typeof item !== 'object') continue;
+        const name = String(item.name ?? '').trim();
+        if (name) {
+            const level = Number.isFinite(Number(item.level)) ? Math.max(1, Math.min(20, Number(item.level))) : depth;
+            result.push({ name, level });
+        }
+
+        if (Array.isArray(item.children) && item.children.length) {
+            result.push(...flattenTopicsFromPayload(item.children, depth + 1));
+        }
+    }
+
+    return result;
+}
+
+function newSubjectId() {
+    const used = new Set((appState?.subjects ?? []).map(s => Number(s.id)));
+    let id = Date.now();
+    while (used.has(id)) id += 1;
+    return id;
+}
+
+function buildSubjectFromSharedPayload(payload) {
+    const name = String(payload?.name ?? '').trim() || 'Materia';
+    const icon = String(payload?.icon ?? '').trim() || 'ðŸ“š';
+    const color = String(payload?.color ?? '').trim() || '#667eea';
+
+    const id = newSubjectId();
+    const subject = createSubject(id, name, icon, color);
+    subject.bannerUrl = normalizeBannerUrl(payload?.bannerUrl);
+
+    const categories = Array.isArray(payload?.categories) ? payload.categories : [];
+    subject.categories = categories
+        .filter(c => c && typeof c === 'object')
+        .map(c => {
+            const catId = addSubjectDraftId();
+            const catName = String(c.name ?? '').trim() || 'Tema';
+            const catIcon = String(c.icon ?? '').trim() || 'ðŸ“Œ';
+            const flatTopics = flattenTopicsFromPayload(c.topics, 1);
+            return {
+                id: catId,
+                name: catName,
+                icon: catIcon,
+                topics: flatTopics.map(t => ({
+                    name: String(t.name ?? '').trim(),
+                    level: Math.max(1, Math.min(20, Number(t.level) || 1)),
+                    completed: false,
+                    completedAt: null,
+                    reviews: []
+                }))
+            };
+        });
+
+    const customAchievements = Array.isArray(payload?.customAchievements) ? payload.customAchievements : [];
+    subject.meta.customAchievements = customAchievements
+        .filter(a => a && typeof a === 'object')
+        .map(a => ({
+            id: String(a.id ?? `custom_${id}_${Date.now()}`),
+            title: String(a.title ?? '').trim(),
+            desc: String(a.desc ?? '').trim(),
+            type: String(a.type ?? 'pct'),
+            value: (a.value == null) ? null : Number(a.value),
+            categoryId: (a.categoryId == null) ? null : Number(a.categoryId)
+        }))
+        .filter(a => a.title);
+
+    return subject;
+}
+
+async function importSharedSubjectIntoApp(payload) {
+    const name = String(payload?.name ?? '').trim() || 'Materia';
+
+    const ok = await showConfirmModalV2({
+        title: 'Agregar materia',
+        text: `¿Querés agregar "${name}" a tus materias?`,
+        confirmText: 'Agregar',
+        cancelText: 'Cancelar',
+        fallbackText: `¿Agregar "${name}"?`
+    });
+    if (!ok) return;
+
+    try {
+        const subject = buildSubjectFromSharedPayload(payload);
+        appState.subjects.push(subject);
+        saveData(true);
+        renderAll();
+        selectSubject(subject.id);
+        showNotification('Materia agregada.');
+    } catch (e) {
+        console.error(e);
+        showNotification('No se pudo agregar la materia.');
+    }
+}
+
+async function loadSharedSubjects() {
+    sharedSubjectsLoaded = false;
+    sharedSubjectsLoadError = null;
+
+    try {
+        const res = await fetch('./shared-subjects.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        sharedSubjectsBase = Array.isArray(data) ? data : [];
+        sharedSubjectsLocal = loadLocalSharedSubjects();
+        refreshSharedSubjectsMerged();
+        sharedSubjectsLoaded = true;
+    } catch (e) {
+        sharedSubjectsLoadError = e;
+        sharedSubjectsLoaded = true;
+        sharedSubjectsBase = [];
+        sharedSubjectsLocal = loadLocalSharedSubjects();
+        refreshSharedSubjectsMerged();
+    }
+
+    renderSharedSubjects();
+}
 
 function showConfirmModalV2(options = null) {
     if (!confirmModal || !confirmModalConfirmBtn || !confirmModalCancelBtn || !confirmModalCloseBtn) {
@@ -665,6 +930,141 @@ function downloadJson(filename, obj) {
     setTimeout(() => URL.revokeObjectURL(url), 2500);
 }
 
+function safeFilename(text) {
+    return String(text ?? '')
+        .trim()
+        .replaceAll(/[\\/:*?"<>|]+/g, '-')
+        .replaceAll(/\s+/g, ' ')
+        .slice(0, 80) || 'materia';
+}
+
+function buildSharedSubjectPayload(subject) {
+    if (!subject) return null;
+
+    const categories = Array.isArray(subject.categories) ? subject.categories : [];
+    return {
+        name: String(subject.name ?? '').trim() || 'Materia',
+        icon: String(subject.icon ?? '').trim() || 'ðŸ“š',
+        color: String(subject.color ?? '').trim() || '#667eea',
+        bannerUrl: normalizeBannerUrl(subject.bannerUrl),
+        categories: categories.map(c => ({
+            name: String(c?.name ?? '').trim() || 'Tema',
+            icon: String(c?.icon ?? '').trim() || 'ðŸ“Œ',
+            topics: (Array.isArray(c?.topics) ? c.topics : []).map(t => ({
+                name: String(t?.name ?? '').trim(),
+                level: Math.max(1, Math.min(20, Number(t?.level) || 1))
+            })).filter(t => t.name)
+        })),
+        customAchievements: (Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : [])
+            .filter(a => a && typeof a === 'object')
+            // Nota: category_complete requiere mapear IDs de categoría; por ahora lo omitimos en "plantillas compartidas".
+            .filter(a => String(a.type ?? '') !== 'category_complete')
+            .map(a => ({
+                title: String(a.title ?? '').trim(),
+                desc: String(a.desc ?? '').trim(),
+                type: String(a.type ?? 'pct'),
+                value: (a.value == null) ? null : Number(a.value)
+            }))
+            .filter(a => a.title)
+    };
+}
+
+async function exportCurrentSubjectTemplate() {
+    if (!currentSubject) {
+        showNotification('Selecciona una materia primero');
+        return;
+    }
+
+    const payload = buildSharedSubjectPayload(currentSubject);
+    if (!payload) {
+        showNotification('No se pudo preparar la materia.');
+        return;
+    }
+
+    const ok = await showConfirmModalV2({
+        title: 'Exportar materia',
+        text: `Esto exporta una plantilla de "${currentSubject.name}". Podés pegarla en shared-subjects.json para que aparezca en "Compartidas".`,
+        confirmText: 'Exportar',
+        cancelText: 'Cancelar',
+        fallbackText: `¿Exportar "${currentSubject.name}"?`
+    });
+    if (!ok) return;
+
+    const pretty = JSON.stringify(payload, null, 2);
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(pretty);
+            showNotification('Copiado al portapapeles.');
+        }
+    } catch {
+        // ignore (clipboard might be blocked)
+    }
+
+    const filename = `shared-subject-${safeFilename(currentSubject.name)}.json`;
+    downloadJson(filename, payload);
+}
+
+function setSharedViewActive() {
+    setActiveView('sharedView');
+    document.querySelectorAll('.nav-item').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === 'sharedView');
+    });
+}
+
+async function shareCurrentSubjectToShared() {
+    if (!currentSubject) {
+        showNotification('Selecciona una materia primero');
+        return;
+    }
+
+    const payload = buildSharedSubjectPayload(currentSubject);
+    if (!payload) {
+        showNotification('No se pudo preparar la materia.');
+        return;
+    }
+
+    const ok = await showConfirmModalV2({
+        title: 'Compartir materia',
+        text: `Agregar "${payload.name}" a "Compartidas" en este dispositivo?`,
+        confirmText: 'Agregar',
+        cancelText: 'Cancelar',
+        fallbackText: `Agregar "${payload.name}" a compartidas?`
+    });
+    if (!ok) return;
+
+    const sig = (() => {
+        try {
+            return JSON.stringify(payload);
+        } catch {
+            return null;
+        }
+    })();
+
+    sharedSubjectsLocal = loadLocalSharedSubjects();
+    const already = sharedSubjectsLocal.some(s => {
+        try {
+            return sig && JSON.stringify(s) === sig;
+        } catch {
+            return false;
+        }
+    });
+
+    if (!already) {
+        sharedSubjectsLocal.unshift(payload);
+        saveLocalSharedSubjects(sharedSubjectsLocal);
+        refreshSharedSubjectsMerged();
+        sharedSubjectsLoaded = true;
+        sharedSubjectsLoadError = null;
+        renderSharedSubjects();
+        showNotification('Materia agregada a compartidas.');
+    } else {
+        showNotification('Esa materia ya está en compartidas.');
+    }
+
+    setSharedViewActive();
+}
+
 function exportBackupToFile() {
     const iso = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-');
     const filename = `study-tracker-backup-${iso}.json`;
@@ -687,7 +1087,7 @@ async function importBackupText(text) {
         text: 'Esto reemplaza tu progreso actual (materias, sesiones, XP y logros).',
         confirmText: 'Importar',
         cancelText: 'Cancelar',
-        fallbackText: 'Â¿Importar backup? Esto reemplaza tu progreso actual.'
+        fallbackText: '¿Importar backup? Esto reemplaza tu progreso actual.'
     });
     if (!ok) return;
 
@@ -2098,6 +2498,7 @@ function renderSessions() {
 }
 
 function renderAllNonTimer() {
+    renderSubjectBanner();
     renderCategories();
     updateSubjectProgress();
     renderMap();
@@ -2159,6 +2560,7 @@ function selectSubject(subjectId) {
         
         subjectTitle.textContent = currentSubject.name;
         subjectSubtitle.textContent = 'Progreso de estudio';
+        renderSubjectBanner();
         setActiveView('subjectView');
         setActiveView('listView');
         renderAll();
@@ -2207,8 +2609,9 @@ function createDraftCategory() {
 
 function ensureAddSubjectDraft() {
     if (!addSubjectDraft) {
-        addSubjectDraft = { categories: [createDraftCategory()] };
+        addSubjectDraft = { bannerUrl: null, categories: [createDraftCategory()] };
     }
+    if (!('bannerUrl' in addSubjectDraft)) addSubjectDraft.bannerUrl = null;
     if (!Array.isArray(addSubjectDraft.categories)) addSubjectDraft.categories = [];
 }
 
@@ -2459,6 +2862,7 @@ function applyImportedSubjectToDraft(payload) {
     const name = String(subjectPayload.name ?? subjectPayload.title ?? '').trim();
     const icon = String(subjectPayload.icon ?? '📚').trim();
     const color = String(subjectPayload.color ?? '#667eea').trim();
+    const bannerUrl = normalizeBannerUrl(subjectPayload.bannerUrl ?? subjectPayload.banner ?? subjectPayload.image);
 
     const categories = Array.isArray(subjectPayload.categories) ? subjectPayload.categories : null;
     const rootTopics = subjectPayload.topics ?? null;
@@ -2477,8 +2881,10 @@ function applyImportedSubjectToDraft(payload) {
     subjectNameInput.value = name || subjectNameInput.value;
     subjectIconInput.value = icon || subjectIconInput.value;
     if (subjectColorInput && /^#([0-9a-fA-F]{6})$/.test(color)) subjectColorInput.value = color;
+    if (subjectBannerUrlInput) subjectBannerUrlInput.value = bannerUrl ?? '';
 
     addSubjectDraft = {
+        bannerUrl,
         categories: normalizedCategories.map(c => ({
             id: addSubjectDraftId(),
             name: c.name,
@@ -2504,8 +2910,9 @@ function showAddSubjectModal() {
     subjectNameInput.value = '';
     subjectIconInput.value = '📚';
     subjectColorInput.value = '#667eea';
+    if (subjectBannerUrlInput) subjectBannerUrlInput.value = '';
 
-    addSubjectDraft = { categories: [createDraftCategory()] };
+    addSubjectDraft = { bannerUrl: null, categories: [createDraftCategory()] };
     setAddSubjectModalTab('manual');
 
     if (subjectImportFile) subjectImportFile.value = '';
@@ -2863,6 +3270,7 @@ function showEditSubjectModal() {
     if (editSubjectNameInput) editSubjectNameInput.value = currentSubject.name ?? '';
     if (editSubjectIconInput) editSubjectIconInput.value = currentSubject.icon ?? '📚';
     if (editSubjectColorInput) editSubjectColorInput.value = currentSubject.color ?? '#667eea';
+    if (editSubjectBannerUrlInput) editSubjectBannerUrlInput.value = currentSubject.bannerUrl ?? '';
 
     setEditSubjectModalTab('details');
     renderEditSubjectBuilder();
@@ -2953,10 +3361,12 @@ function saveEditedSubject() {
 
     const icon = String(editSubjectIconInput?.value ?? '📚').trim() || '📚';
     const color = String(editSubjectColorInput?.value ?? subject.color ?? '#667eea');
+    const bannerUrl = normalizeBannerUrl(editSubjectBannerUrlInput?.value);
 
     subject.name = name;
     subject.icon = icon;
     subject.color = color;
+    subject.bannerUrl = bannerUrl;
 
     applyEditDraftToSubject(subject);
     checkSubjectAchievementsV2(subject, { silent: true });
@@ -2977,6 +3387,7 @@ function resetSubjectProgress(subject) {
         name: subject.name,
         icon: subject.icon,
         color: subject.color,
+        bannerUrl: subject.bannerUrl ?? null,
         categories: subject.categories,
         difficulty: subject?.meta?.difficulty ?? 'normal',
         customAchievements: Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : []
@@ -2997,6 +3408,7 @@ function resetSubjectProgress(subject) {
     freshMeta.customAchievements = preserved.customAchievements;
 
     subject.meta = freshMeta;
+    subject.bannerUrl = preserved.bannerUrl;
     subject.categories = preserved.categories ?? [];
 }
 
@@ -3023,6 +3435,7 @@ function addSubject() {
     const name = subjectNameInput.value.trim();
     const icon = subjectIconInput.value.trim();
     const color = subjectColorInput.value;
+    const bannerUrl = normalizeBannerUrl(subjectBannerUrlInput?.value ?? addSubjectDraft?.bannerUrl);
     
     if (!name) {
         showNotification('El nombre de la materia es obligatorio');
@@ -3030,6 +3443,7 @@ function addSubject() {
     }
     
     const newSubject = createSubject(Date.now(), name, icon || '📚', color);
+    newSubject.bannerUrl = bannerUrl;
 
     ensureAddSubjectDraft();
     const baseId = Date.now() + 100;
@@ -3245,6 +3659,12 @@ function setupEventListeners() {
     if (editSubjectBtn) {
         editSubjectBtn.addEventListener('click', showEditSubjectModal);
     }
+    if (shareSubjectBtn) {
+        shareSubjectBtn.addEventListener('click', shareCurrentSubjectToShared);
+    }
+    if (exportSubjectBtn) {
+        exportSubjectBtn.addEventListener('click', exportCurrentSubjectTemplate);
+    }
     if (closeEditSubjectModalBtn) closeEditSubjectModalBtn.addEventListener('click', hideEditSubjectModal);
     if (cancelEditSubjectModalBtn) cancelEditSubjectModalBtn.addEventListener('click', hideEditSubjectModal);
     if (confirmEditSubjectModalBtn) {
@@ -3427,6 +3847,17 @@ function setupEventListeners() {
             renderAll();
         });
     });
+
+    document.querySelectorAll('.nav-item[data-view="sharedView"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentSubject = null;
+            setActiveView('sharedView');
+            document.querySelectorAll('.nav-item').forEach(b => {
+                b.classList.toggle('active', b.dataset.view === 'sharedView');
+            });
+            renderSharedSubjects();
+        });
+    });
 }
 
 function toggleTopicCompleted(categoryId, topicIndex) {
@@ -3554,6 +3985,7 @@ function setupAdditionalEventListeners() {
 function initApp() {
     loadData();
     checkAchievementsV2({ activity: 'generic', nowMs: Date.now(), silent: true });
+    loadSharedSubjects();
     loadTheme();
     renderAll();
     setupEventListeners();

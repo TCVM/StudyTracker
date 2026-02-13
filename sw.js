@@ -1,6 +1,6 @@
 /* StudyTracker Service Worker (minimal PWA offline support) */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `studytracker-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `studytracker-runtime-${CACHE_VERSION}`;
 
@@ -10,7 +10,8 @@ const STATIC_ASSETS = [
   './styles.css',
   './app.js',
   './manifest.webmanifest',
-  './icon.svg'
+  './icon.svg',
+  './shared-subjects.json'
 ];
 
 self.addEventListener('install', (event) => {

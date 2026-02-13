@@ -1310,6 +1310,223 @@ body.dark-mode .badge.unlocked {
     margin-top: 25px;
 }
 
+.subject-hero {
+    position: relative;
+    width: 100%;
+    min-height: 160px;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 14px 0 10px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.subject-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Panel/scrim: pegado arriba/izquierda/abajo, se desvanece hacia la derecha */
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.34) 55%, rgba(0, 0, 0, 0.56) 100%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.68) 0%, rgba(0, 0, 0, 0.36) 55%, rgba(0, 0, 0, 0.00) 78%);
+}
+
+.subject-hero img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.subject-hero-overlay {
+    position: relative;
+    z-index: 2;
+    padding: 14px;
+    min-height: 160px;
+    display: flex;
+    align-items: flex-end;
+    background: transparent;
+}
+
+.subject-header-on-hero {
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.subject-header-on-hero .subject-info {
+    position: relative;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: transparent;
+    max-width: min(720px, calc(100% - 160px));
+}
+
+.subject-header-on-hero .title,
+.subject-header-on-hero .subtitle {
+    color: white;
+    text-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
+}
+
+/* Ensure strong contrast in light mode (some global .title styles can override) */
+body:not(.dark-mode) #subjectView .subject-hero .title,
+body:not(.dark-mode) #subjectView .subject-hero .subtitle {
+    color: #f8fafc;
+}
+
+.subject-header-on-hero .title {
+    font-weight: 900;
+    letter-spacing: -0.01em;
+}
+
+.subject-header-on-hero .subtitle {
+    opacity: 0.94;
+}
+
+.subject-header-on-hero .subject-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    margin-left: auto;
+}
+
+.subject-header-on-hero .subject-actions .btn {
+    min-width: 150px;
+    justify-content: center;
+}
+
+.subject-header-on-hero .subject-actions .btn {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: white;
+}
+
+.subject-header-on-hero .subject-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.shared-subjects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.shared-subject-card {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+}
+
+.shared-subject-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+}
+
+.shared-subject-card:focus-visible {
+    outline: 3px solid rgba(102, 126, 234, 0.55);
+    outline-offset: 2px;
+}
+
+body.dark-mode .shared-subject-card {
+    background: rgba(17, 24, 39, 0.78);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+
+.shared-subject-banner {
+    width: 100%;
+    height: 120px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.35), rgba(118, 75, 162, 0.35));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.dark-mode .shared-subject-banner {
+    border-color: rgba(255, 255, 255, 0.10);
+}
+
+.shared-subject-banner img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.shared-subject-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.shared-subject-name {
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 1.15;
+}
+
+.shared-subject-chip {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(102, 126, 234, 0.14);
+    color: #3b4cd8;
+    white-space: nowrap;
+}
+
+body.dark-mode .shared-subject-chip {
+    background: rgba(147, 197, 253, 0.14);
+    color: #93c5fd;
+}
+
+.shared-empty {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px dashed rgba(0, 0, 0, 0.2);
+    opacity: 0.85;
+}
+
+body.dark-mode .shared-empty {
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #a0aec0;
+}
+
+@media (max-width: 520px) {
+    .subject-hero {
+        height: 130px;
+        border-radius: 14px;
+    }
+
+    .subject-hero-overlay {
+        min-height: 130px;
+        padding: 12px;
+    }
+
+    .subject-header-on-hero .subject-actions .btn {
+        min-width: 132px;
+    }
+}
+
 .session-panel {
     margin-top: 22px;
     padding-top: 18px;
