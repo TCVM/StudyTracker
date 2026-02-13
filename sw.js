@@ -1,6 +1,6 @@
 /* StudyTracker Service Worker (minimal PWA offline support) */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `studytracker-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `studytracker-runtime-${CACHE_VERSION}`;
 
@@ -71,16 +71,28 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Cache-first for same-origin static assets.
+  // Same-origin assets: stale-while-revalidate (fast + updates without manual refresh).
   if (url.origin === self.location.origin) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);
-        if (cached) return cached;
-        const response = await fetch(request);
-        const cache = await caches.open(RUNTIME_CACHE);
-        cache.put(request, response.clone());
-        return response;
+        const cache = await caches.open(STATIC_CACHE);
+
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          event.waitUntil(fetchPromise);
+          return cached;
+        }
+
+        const network = await fetchPromise;
+        if (network) return network;
+        return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       })()
     );
     return;

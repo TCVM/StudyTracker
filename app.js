@@ -521,12 +521,13 @@ function normalizeLoadedState(loaded) {
     const base = createDefaultState();
 
     if (!loaded || typeof loaded !== 'object') {
-        base.subjects.push(createSubjectFromInitialData());
         return base;
     }
 
     if (!loaded.version && Array.isArray(loaded.categories) && loaded.categories.length) {
         const subject = createSubject(1, 'Arquitectura y Organización de Computadoras', '💻', '#667eea');
+        subject.name = 'Materia importada';
+        subject.icon = 'ðŸ“š';
         subject.categories = loaded.categories.map(category => ({
             id: category.id,
             name: category.name,
@@ -553,8 +554,10 @@ function normalizeLoadedState(loaded) {
     };
 
     if (!Array.isArray(merged.subjects) || merged.subjects.length === 0) {
-        merged.subjects.push(createSubjectFromInitialData());
-    } else {
+        merged.subjects = [];
+    }
+
+    if (merged.subjects.length > 0) {
         merged.subjects = merged.subjects.map(subject => ({
             ...createSubject(subject.id || Date.now(), subject.name || 'Materia', subject.icon || '📚', subject.color || '#667eea'),
             ...subject,
@@ -620,11 +623,8 @@ function loadData() {
     }
 
     // Si no hay datos guardados, crear estado por defecto
-    console.log('Creando novo estado por defecto con datos iniciales');
+    console.log('Creando nuevo estado por defecto (sin materias)');
     appState = createDefaultState();
-    const subject = createSubjectFromInitialData();
-    appState.subjects.push(subject);
-    console.log('appState después de agregar materia:', appState);
 }
 
 function saveData(force = false) {
@@ -713,7 +713,6 @@ async function resetData() {
     });
     if (!ok) return;
     appState = createDefaultState();
-    appState.subjects.push(createSubjectFromInitialData());
     saveData(true);
     currentSubject = null;
     renderAll();
