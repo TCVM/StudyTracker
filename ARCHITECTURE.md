@@ -1,60 +1,44 @@
-# Estructura Modular de StudyTracker
+# StudyTracker - Arquitectura (ESM)
 
-## Organización del Proyecto
+## Entry
 
-### `/src/modules/` - Lógica de Negocio
+- `index.html` carga `src/main.mjs` (ESM).
+- `src/main.mjs` inicializa el runtime importando `src/app/bootstrap.mjs`.
+- `src/app/bootstrap.mjs` inicializa la app (carga datos, setup listeners, render inicial, etc.).
 
-Módulos independientes que manejan la lógica de la aplicación:
+## Carpetas principales
 
-| Módulo              | Responsabilidad                               |
-| ------------------- | --------------------------------------------- |
-| **achievements.js** | Sistema de logros, desbloqueos y verificación |
-| **subjects.js**     | Gestión de materias (crear, eliminar, buscar) |
-| **topics.js**       | Gestión de temas (completar, estadísticas)    |
-| **xp.js**           | Sistema de XP, níveis y skill points          |
-| **stats.js**        | Estadísticas de sesiones y progreso a diario  |
-| **timer-utils.js**  | Utilidades del timer (formateo, cálculos)     |
-| **difficulty.js**   | Configuración de dificultades                 |
-| **theme.js**        | Gestión del tema oscuro/claro                 |
-| **ui-manager.js**   | Control de modales y navegación               |
+### `src/app/`
 
-### `/src/controllers/` - Control de Flujo
+Aplicación (runtime) y estado en memoria.
 
-- **timer.js** - Lógica principal del timer, tick events
+- `src/app/bootstrap.mjs`: inicialización (composition root).
+- `src/app/core/*`: estado + persistencia + config.
+  - `src/app/core/constants.mjs`
+  - `src/app/core/state.mjs`
+  - `src/app/core/ui-state.mjs`
+  - `src/app/core/storage.mjs`
+- `src/app/ui/*`: orquestación de UI (render, listeners, navegación).
+  - `src/app/ui/render.mjs`
+  - `src/app/ui/events.mjs`
+  - `src/app/ui/home.mjs`
+  - `src/app/ui/flow.mjs`
+  - `src/app/ui/confirm-modal.mjs`
+- `src/app/features/*`: features de la app (cada una con su propia lógica/UI).
+  - `src/app/features/timer/*`
+  - `src/app/features/achievements/*`
+  - `src/app/features/subject/*`
+  - `src/app/features/topics/*`
+  - `src/app/features/notes/*`
+  - `src/app/features/xp/*`
+- `src/app/shared/*`: “Compartidas” (estado local, acciones y UI).
 
-### `/src/utils/` - Utilidades Compartidas
+### `src/utils/`
 
-- **storage.js** - Persistencia en localStorage
-- **constants.js** - Configuración global
-- **helpers.js** - Funciones auxiliares
-- **initialData.js** - Datos iniciales de Arquitectura
+- `src/utils/helpers.js`: helpers de UI/formatos/notificaciones/tema.
+- `src/utils/initialData.js`: dataset inicial de Arquitectura.
 
-### `/src/views/` - Renderizado UI
+## Nota sobre código antiguo
 
-- **ui.js** - Renderización de componentes
+Se eliminó la arquitectura anterior (scripts clásicos / controllers / modules / views) para evitar redundancia. El único entry soportado es `src/main.mjs`.
 
-## Ventajas de esta Estructura
-
-✅ **Modularidad**: Cada módulo tiene una única responsabilidad  
-✅ **Reutilización**: Funciones compartidas fácilmente  
-✅ **Testing**: Más fácil de testear componentes aislados  
-✅ **Mantenimiento**: Código limpio y organizado  
-✅ **Escalabilidad**: Fácil agregar nuevas funcionalidades
-
-## Ejemplo de Uso
-
-```javascript
-// app.js - Código limpio y legible
-import { toggleTopicCompleted } from "./modules/topics.js";
-import { checkAchievements } from "./modules/achievements.js";
-
-toggleTopicCompleted(appState, currentSubject, categoryId, topicIndex);
-checkAchievements(appState);
-```
-
-## Próximas Mejoras
-
-- [ ] Módulo de settings/configuración
-- [ ] Módulo de notificaciones centralizado
-- [ ] Sistema de caché para datos frecuentes
-- [ ] Módulo de analytics

@@ -1,6 +1,6 @@
 /* StudyTracker Service Worker (minimal PWA offline support) */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v47';
 const STATIC_CACHE = `studytracker-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `studytracker-runtime-${CACHE_VERSION}`;
 
@@ -8,7 +8,36 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './app.js',
+  './src/main.mjs',
+  './src/register-sw.mjs',
+  './src/app/bootstrap.mjs',
+  './src/app/core/state.mjs',
+  './src/app/core/ui-state.mjs',
+  './src/app/shared/state.mjs',
+  './src/app/core/constants.mjs',
+  './src/app/core/storage.mjs',
+  './src/app/ui/flow.mjs',
+  './src/app/ui/events.mjs',
+  './src/app/ui/home.mjs',
+  './src/app/ui/render.mjs',
+  './src/app/ui/confirm-modal.mjs',
+  './src/app/features/xp/xp.mjs',
+  './src/app/features/timer/timer.mjs',
+  './src/app/features/timer/mini-timer.mjs',
+  './src/app/features/notes/notes-skilltree-stats.mjs',
+  './src/app/features/topics/actions.mjs',
+  './src/app/features/achievements/core.mjs',
+  './src/app/features/achievements/ui.mjs',
+  './src/app/features/achievements/definitions.mjs',
+  './src/app/shared/core.mjs',
+  './src/app/shared/actions.mjs',
+  './src/app/shared/ui.mjs',
+  './src/app/features/subject/drafts.mjs',
+  './src/app/features/subject/view.mjs',
+  './src/app/features/subject/add-modal.mjs',
+  './src/app/features/subject/edit-modal.mjs',
+  './src/utils/helpers.js',
+  './src/utils/initialData.js',
   './manifest.webmanifest',
   './icon.svg',
   './shared-subjects.json'

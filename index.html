@@ -38,6 +38,10 @@
                         <span class="nav-icon">🧩</span>
                         <span class="nav-text">Compartidas</span>
                     </button>
+                    <button class="nav-item" data-view="globalSkillTreeView" type="button">
+                        <span class="nav-icon">&#127795;</span>
+                        <span class="nav-text">&Aacute;rbol</span>
+                    </button>
                 </div>
                 
                 <div class="nav-section">
@@ -160,6 +164,31 @@
                 </div>
             </section>
 
+            <!-- Árbol global -->
+            <section class="view" id="globalSkillTreeView" aria-label="Árbol global">
+                <div class="container">
+                    <header class="header">
+                        <div class="header-content">
+                            <div class="subject-header">
+                                <div class="subject-info">
+                                    <h1 class="title">Árbol Global</h1>
+                                    <p class="subtitle">Desbloqueos generales para tu progreso total</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Habilidades</h2>
+                            <div class="panel-subtitle">Usa tus SP globales para desbloquear mejoras</div>
+                        </div>
+                        <div class="global-skill-meta" id="globalSkillMeta"></div>
+                        <div class="global-skill-tree" id="globalSkillTreeContainer"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Página de Materia -->
             <section class="view" id="subjectView">
                 <div class="container">
@@ -193,7 +222,7 @@
                                 </div>
                             </div>
 
-                            <section class="session-panel" aria-label="Sesión de enfoque">
+                            <section class="session-panel" id="sessionPanel" aria-label="Sesión de enfoque">
                                 <div class="session-left">
                                     <div class="timer-display" id="timerDisplay">00:00:00</div>
                                     <div class="timer-meta">
@@ -263,7 +292,7 @@
                             <nav class="view-tabs" aria-label="Vistas">
                                 <button class="tab-btn active" data-view="listView" type="button">Lista</button>
                                 <button class="tab-btn" data-view="mapView" type="button">Mapa</button>
-                                <button class="tab-btn" data-view="skillView" type="button">Árbol</button>
+                                <button class="tab-btn" data-view="notesView" type="button">Notas</button>
                                 <button class="tab-btn" data-view="statsView" type="button">Stats</button>
                             </nav>
                         </div>
@@ -277,8 +306,18 @@
                         <section class="view" id="mapView" aria-label="Mapa de temas">
                             <div class="panel">
                                 <div class="panel-header">
-                                    <h2 class="panel-title">Mapa de Temas</h2>
-                                    <div class="panel-subtitle">Limpia marcadores completando temas y repasos</div>
+                                    <div class="panel-header-row">
+                                        <div class="panel-header-text">
+                                            <h2 class="panel-title">Mapa de Temas</h2>
+                                            <div class="panel-subtitle">Limpia marcadores completando temas y repasos</div>
+                                        </div>
+                                        <div class="panel-actions">
+                                            <div class="seg-toggle" role="group" aria-label="Vista del mapa">
+                                                <button class="seg-toggle-btn active" id="mapViewGridBtn" type="button" aria-pressed="true">Grid</button>
+                                                <button class="seg-toggle-btn" id="mapViewMindmapBtn" type="button" aria-pressed="false">Mindmap</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="map-legend">
                                     <span class="legend-pill"><span class="dot dot-pending"></span>Pendiente</span>
@@ -289,13 +328,38 @@
                             </div>
                         </section>
 
-                        <section class="view" id="skillView" aria-label="Árbol de habilidades">
+                        <section class="view" id="notesView" aria-label="Notas">
                             <div class="panel">
                                 <div class="panel-header">
-                                    <h2 class="panel-title">Árbol de Habilidades</h2>
-                                    <div class="panel-subtitle">Gasta SP al subir de nivel para mejorar tu progreso</div>
+                                    <h2 class="panel-title">Notas</h2>
+                                    <div class="panel-subtitle">Anotador + links útiles por materia</div>
                                 </div>
-                                <div class="skills-grid" id="skillTreeContainer"></div>
+                                <div class="notes-grid">
+                                    <div class="notes-block">
+                                        <div class="notes-label-row">
+                                            <label class="notes-label" for="subjectNotesText">Anotador</label>
+                                            <div class="notes-toolbar">
+                                                <select id="subjectNotesSelect" class="input notes-select" aria-label="Seleccionar nota"></select>
+                                                <button id="subjectAddNoteBtn" class="btn btn-secondary btn-small" type="button">+ Nota</button>
+                                                <button id="subjectRenameNoteBtn" class="btn btn-secondary btn-small" type="button">Renombrar</button>
+                                                <button id="subjectDeleteNoteBtn" class="btn btn-secondary btn-small" type="button">Eliminar</button>
+                                            </div>
+                                        </div>
+                                        <textarea id="subjectNotesText" class="notes-textarea" placeholder="Escribe tus notas aquí..."></textarea>
+                                    </div>
+                                    <div class="notes-block">
+                                        <div class="notes-label-row">
+                                            <div class="notes-label">Links útiles</div>
+                                        </div>
+                                        <div class="links-add">
+                                            <input id="subjectLinkTitle" class="input" type="text" placeholder="Título (opcional)">
+                                            <input id="subjectLinkUrl" class="input" type="url" placeholder="https://...">
+                                            <button id="subjectAddLinkBtn" class="btn btn-primary" type="button">Agregar</button>
+                                        </div>
+                                        <div class="links-list" id="subjectLinksList"></div>
+                                        <div class="links-empty" id="subjectLinksEmpty" hidden>No hay links todavía.</div>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
@@ -580,14 +644,18 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
-    <script>
-      (function () {
-        if (!('serviceWorker' in navigator)) return;
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('./sw.js').catch(function () {});
-        });
-      })();
-    </script>
+    <div class="mini-timer" id="miniTimerBar" hidden>
+        <div class="mini-timer-left">
+            <div class="mini-timer-subject" id="miniTimerSubject">Materia</div>
+            <div class="mini-timer-time" id="miniTimerDisplay">00:00:00</div>
+        </div>
+        <div class="mini-timer-actions">
+            <button class="btn btn-primary" id="miniTimerToggleBtn" type="button">Iniciar</button>
+            <button class="btn btn-secondary" id="miniTimerStopBtn" type="button" disabled>Detener</button>
+        </div>
+    </div>
+
+    <script type="module" src="./src/main.mjs"></script>
+    <script type="module" src="./src/register-sw.mjs"></script>
 </body>
 </html>
