@@ -736,7 +736,24 @@ body {
     transition: all 0.2s ease;
 }
 
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    resize: vertical;
+    min-height: 140px;
+}
+
 .form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -760,6 +777,7 @@ body {
 body.dark-mode {
     background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
     color: #e2e8f0;
+    color-scheme: dark;
 }
 
 body.dark-mode .sidebar,
@@ -913,6 +931,16 @@ body.dark-mode .form-group input[type="text"]::placeholder {
     color: #a0aec0;
 }
 
+body.dark-mode .form-group textarea {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #e2e8f0;
+}
+
+body.dark-mode .form-group textarea::placeholder {
+    color: #a0aec0;
+}
+
 /* Original styles */
 body.dark-mode .header-content,
 body.dark-mode .panel,
@@ -996,6 +1024,42 @@ body.dark-mode .difficulty-label {
 }
 
 body.dark-mode .difficulty-select {
+    color: #e2e8f0;
+    color-scheme: dark;
+    background: #111827;
+    border: 1px solid rgba(102, 126, 234, 0.28);
+    border-radius: 10px;
+    padding: 4px 8px;
+}
+
+body.dark-mode .difficulty-select option,
+body.dark-mode .difficulty-select optgroup {
+    background-color: #111827;
+    color: #e2e8f0;
+}
+
+body.dark-mode .difficulty-select option:checked {
+    background-color: #374151;
+    color: #e2e8f0;
+}
+
+body.dark-mode .difficulty-select:focus {
+    outline: none;
+    border-color: rgba(167, 139, 250, 0.7);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18);
+}
+
+body.dark-mode .timer-custom-title {
+    color: #cbd5e0;
+}
+
+body.dark-mode .timer-custom-label {
+    color: #cbd5e0;
+}
+
+body.dark-mode .timer-custom-input {
+    background: rgba(74, 85, 104, 0.5);
+    border-color: rgba(102, 126, 234, 0.3);
     color: #e2e8f0;
 }
 
@@ -1616,6 +1680,42 @@ body.dark-mode .timer-display {
 
 .timer-actions .btn {
     min-width: 120px;
+    justify-content: center;
+}
+
+.timer-custom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.timer-custom-title {
+    font-weight: 800;
+    color: #4a5568;
+}
+
+.timer-custom-label {
+    font-weight: 700;
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+.timer-custom-input {
+    width: 92px;
+    padding: 8px 10px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #2d3748;
+    font-weight: 700;
+    outline: none;
+}
+
+.timer-custom-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .mini-timer {
@@ -1675,6 +1775,7 @@ body.dark-mode .mini-timer {
 .mini-timer-actions .btn {
     min-width: 112px;
     padding: 10px 12px;
+    justify-content: center;
 }
 
 .session-right {

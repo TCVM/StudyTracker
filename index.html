@@ -261,6 +261,20 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="timer-custom" id="pomodoroCustomControls" hidden>
+                                        <span class="timer-custom-title">Pomodoro personalizado</span>
+                                        <label class="timer-custom-label" for="pomodoroWorkMin">Foco</label>
+                                        <input class="timer-custom-input" id="pomodoroWorkMin" type="number" inputmode="numeric" min="1" max="240" step="1" placeholder="25">
+                                        <label class="timer-custom-label" for="pomodoroBreakMin">Descanso</label>
+                                        <input class="timer-custom-input" id="pomodoroBreakMin" type="number" inputmode="numeric" min="1" max="120" step="1" placeholder="5">
+                                        <button class="btn btn-secondary btn-small" id="pomodoroCustomApplyBtn" type="button">Aplicar</button>
+                                    </div>
+                                    <div class="timer-custom" id="alarmCustomControls" hidden>
+                                        <span class="timer-custom-title">Alarma personalizada</span>
+                                        <label class="timer-custom-label" for="alarmCustomMin">Minutos</label>
+                                        <input class="timer-custom-input" id="alarmCustomMin" type="number" inputmode="numeric" min="1" max="240" step="1" placeholder="30">
+                                        <button class="btn btn-secondary btn-small" id="alarmCustomApplyBtn" type="button">Aplicar</button>
+                                    </div>
                                     <div class="timer-actions">
                                         <button class="btn btn-primary" id="timerToggleBtn">Iniciar</button>
                                         <button class="btn btn-secondary" id="timerStopBtn" disabled>Detener</button>
@@ -465,11 +479,22 @@
                 <div id="addSubjectImportSection" role="tabpanel" hidden>
                     <div class="import-box">
                         <div class="import-title">Importar estructura</div>
+                        <div class="import-subtitle">Opcion 1: importar archivo</div>
                         <div class="import-subtitle">Subí un archivo JSON con la materia y su estructura (temas/subtemas).</div>
 
                         <div class="form-group">
                             <label for="subjectImportFile">Archivo</label>
                             <input type="file" id="subjectImportFile" accept=".json,application/json">
+                        </div>
+
+                        <div class="import-subtitle">Opcion 2: pegar JSON directo</div>
+                        <div class="form-group">
+                            <label for="subjectImportText">Pegar JSON</label>
+                            <textarea id="subjectImportText" rows="10" placeholder="Pegá acá el JSON de la materia (misma estructura que el archivo)."></textarea>
+                            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                                <button class="btn btn-secondary btn-small" id="subjectImportApplyBtn" type="button">Importar pegado</button>
+                                <button class="btn btn-secondary btn-small" id="subjectImportClearBtn" type="button">Limpiar</button>
+                            </div>
                         </div>
 
                         <div class="import-hint">

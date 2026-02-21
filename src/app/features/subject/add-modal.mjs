@@ -325,6 +325,7 @@ export function showAddSubjectModal() {
   const subjectColorInput = byId('subjectColor');
   const subjectBannerUrlInput = byId('subjectBannerUrl');
   const subjectImportFile = byId('subjectImportFile');
+  const subjectImportText = byId('subjectImportText');
   const subjectImportStatus = byId('subjectImportStatus');
   const addSubjectModal = byId('addSubjectModal');
 
@@ -337,6 +338,7 @@ export function showAddSubjectModal() {
   setAddSubjectModalTab('manual');
 
   if (subjectImportFile) subjectImportFile.value = '';
+  if (subjectImportText) subjectImportText.value = '';
   if (subjectImportStatus) subjectImportStatus.textContent = '';
 
   renderAddSubjectBuilder();

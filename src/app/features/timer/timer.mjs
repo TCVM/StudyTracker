@@ -63,6 +63,11 @@ export function updateTimerUi() {
   const difficultySelect = byId('difficultySelect');
   const pomodoroModeSelect = byId('pomodoroMode');
   const alarmModeSelect = byId('alarmMode');
+  const pomodoroCustomControls = byId('pomodoroCustomControls');
+  const pomodoroWorkMin = byId('pomodoroWorkMin');
+  const pomodoroBreakMin = byId('pomodoroBreakMin');
+  const alarmCustomControls = byId('alarmCustomControls');
+  const alarmCustomMin = byId('alarmCustomMin');
 
   const subject = getCurrentSubject();
   if (!subject) {
@@ -74,6 +79,8 @@ export function updateTimerUi() {
     if (difficultySelect) difficultySelect.value = 'normal';
     if (pomodoroModeSelect) pomodoroModeSelect.value = 'off';
     if (alarmModeSelect) alarmModeSelect.value = 'off';
+    if (pomodoroCustomControls) pomodoroCustomControls.hidden = true;
+    if (alarmCustomControls) alarmCustomControls.hidden = true;
     updateXpUiImpl();
     updateMiniTimerUi();
     return;
@@ -102,8 +109,12 @@ export function updateTimerUi() {
       const w = Math.round(Number(subject?.meta?.pomodoro?.workSeconds ?? 0) / 60);
       const b = Math.round(Number(subject?.meta?.pomodoro?.breakSeconds ?? 0) / 60);
       pomodoroModeSelect.title = `Personalizado: ${w}/${b} min`;
+      if (pomodoroCustomControls) pomodoroCustomControls.hidden = false;
+      if (pomodoroWorkMin) pomodoroWorkMin.value = String(Math.max(1, w || 25));
+      if (pomodoroBreakMin) pomodoroBreakMin.value = String(Math.max(1, b || 5));
     } else {
       pomodoroModeSelect.title = '';
+      if (pomodoroCustomControls) pomodoroCustomControls.hidden = true;
     }
   }
   if (alarmModeSelect) {
@@ -111,8 +122,11 @@ export function updateTimerUi() {
     if (alarmModeSelect.value === 'custom') {
       const m = Math.round(Number(subject?.meta?.alarm?.seconds ?? 0) / 60);
       alarmModeSelect.title = `Personalizado: ${m} min`;
+      if (alarmCustomControls) alarmCustomControls.hidden = false;
+      if (alarmCustomMin) alarmCustomMin.value = String(Math.max(1, m || 30));
     } else {
       alarmModeSelect.title = '';
+      if (alarmCustomControls) alarmCustomControls.hidden = true;
     }
   }
 
@@ -332,26 +346,14 @@ export function setPomodoroMode(mode) {
   const prev = String(subject.meta.pomodoro.mode ?? 'off');
 
   if (m === 'custom') {
-    const workMinRaw = prompt('Pomodoro personalizado: minutos de foco (ej: 25)', '25');
-    if (workMinRaw == null) {
-      if (pomodoroModeSelect) pomodoroModeSelect.value = prev;
-      return;
-    }
-    const breakMinRaw = prompt('Pomodoro personalizado: minutos de descanso (ej: 5)', '5');
-    if (breakMinRaw == null) {
-      if (pomodoroModeSelect) pomodoroModeSelect.value = prev;
-      return;
-    }
-
-    const workMin = Math.max(1, Math.min(240, Math.floor(Number(workMinRaw))));
-    const breakMin = Math.max(1, Math.min(120, Math.floor(Number(breakMinRaw))));
-    if (!Number.isFinite(workMin) || !Number.isFinite(breakMin)) {
-      showNotification('Valores inválidos para Pomodoro.');
-      if (pomodoroModeSelect) pomodoroModeSelect.value = prev;
-      return;
-    }
-
-    subject.meta.pomodoro = { mode: 'custom', workSeconds: workMin * 60, breakSeconds: breakMin * 60 };
+    // Values are edited via dedicated UI inputs.
+    const workSeconds = Number(subject?.meta?.pomodoro?.workSeconds ?? 25 * 60);
+    const breakSeconds = Number(subject?.meta?.pomodoro?.breakSeconds ?? 5 * 60);
+    subject.meta.pomodoro = {
+      mode: 'custom',
+      workSeconds: Number.isFinite(workSeconds) && workSeconds > 0 ? workSeconds : (25 * 60),
+      breakSeconds: Number.isFinite(breakSeconds) && breakSeconds > 0 ? breakSeconds : (5 * 60)
+    };
   } else {
     const preset = parsePomodoroPreset(m);
     if (!preset) {
@@ -361,6 +363,37 @@ export function setPomodoroMode(mode) {
     }
     subject.meta.pomodoro = preset;
   }
+
+  const t = subject.meta.timer;
+  t.pomodoroPhase = 'work';
+  t.pomodoroPhaseStartSessionSeconds = Number(t.sessionSeconds) || 0;
+  t.pomodoroLastSignal = null;
+
+  saveData(true);
+  updateTimerUi();
+}
+
+export function setCustomPomodoroMinutes(workMinutes, breakMinutes) {
+  const subject = getCurrentSubject();
+  if (!subject) {
+    showNotification('Selecciona una materia primero');
+    return;
+  }
+
+  const workMin = Math.max(1, Math.min(240, Math.floor(Number(workMinutes))));
+  const breakMin = Math.max(1, Math.min(120, Math.floor(Number(breakMinutes))));
+  if (!Number.isFinite(workMin) || !Number.isFinite(breakMin)) {
+    showNotification('Valores inválidos para Pomodoro.');
+    return;
+  }
+
+  if (!subject.meta.pomodoro || typeof subject.meta.pomodoro !== 'object') {
+    subject.meta.pomodoro = { mode: 'custom', workSeconds: 25 * 60, breakSeconds: 5 * 60 };
+  }
+
+  subject.meta.pomodoro.mode = 'custom';
+  subject.meta.pomodoro.workSeconds = workMin * 60;
+  subject.meta.pomodoro.breakSeconds = breakMin * 60;
 
   const t = subject.meta.timer;
   t.pomodoroPhase = 'work';
@@ -397,18 +430,9 @@ export function setAlarmMode(mode) {
   const prev = String(subject.meta.alarm.mode ?? 'off');
 
   if (m === 'custom') {
-    const minRaw = prompt('Alarma personalizada: minutos (ej: 30)', '30');
-    if (minRaw == null) {
-      if (alarmModeSelect) alarmModeSelect.value = prev;
-      return;
-    }
-    const min = Math.max(1, Math.min(240, Math.floor(Number(minRaw))));
-    if (!Number.isFinite(min)) {
-      showNotification('Valor inválido para alarma.');
-      if (alarmModeSelect) alarmModeSelect.value = prev;
-      return;
-    }
-    subject.meta.alarm = { mode: 'custom', seconds: min * 60 };
+    // Values are edited via dedicated UI inputs.
+    const seconds = Number(subject?.meta?.alarm?.seconds ?? 30 * 60);
+    subject.meta.alarm = { mode: 'custom', seconds: (Number.isFinite(seconds) && seconds > 0) ? seconds : (30 * 60) };
   } else {
     const preset = parseAlarmPreset(m);
     if (!preset) {
@@ -418,6 +442,33 @@ export function setAlarmMode(mode) {
     }
     subject.meta.alarm = preset;
   }
+
+  const t = subject.meta.timer;
+  t.alarmFired = false;
+
+  saveData(true);
+  updateTimerUi();
+}
+
+export function setCustomAlarmMinutes(minutes) {
+  const subject = getCurrentSubject();
+  if (!subject) {
+    showNotification('Selecciona una materia primero');
+    return;
+  }
+
+  const min = Math.max(1, Math.min(240, Math.floor(Number(minutes))));
+  if (!Number.isFinite(min)) {
+    showNotification('Valor inválido para alarma.');
+    return;
+  }
+
+  if (!subject.meta.alarm || typeof subject.meta.alarm !== 'object') {
+    subject.meta.alarm = { mode: 'custom', seconds: min * 60 };
+  }
+
+  subject.meta.alarm.mode = 'custom';
+  subject.meta.alarm.seconds = min * 60;
 
   const t = subject.meta.timer;
   t.alarmFired = false;

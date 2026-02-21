@@ -143,6 +143,19 @@ export function checkSubjectAchievementsV2(subject, context = null) {
       continue;
     }
 
+    if (a.kind === 'category' || a.kind === 'topic') {
+      const categoryId = Number(a.categoryId);
+      if (!Number.isFinite(categoryId)) continue;
+      if (a.kind === 'category' && String(a.condition ?? '') !== 'category_complete') continue;
+
+      const category = (subject.categories ?? []).find((c) => c && c.id === categoryId) ?? null;
+      const topics = Array.isArray(category?.topics) ? category.topics : [];
+      if (topics.length === 0) continue;
+      const allDone = topics.every((t) => t && t.completed);
+      if (allDone) unlockSubjectAchievementV2(subject, a.id, { silent });
+      continue;
+    }
+
     if (a.kind === 'custom') {
       const t = String(a.type ?? '');
       const threshold = Number(a.value);

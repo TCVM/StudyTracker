@@ -1,9 +1,6 @@
 import { ACHIEVEMENTS } from '../../core/constants.mjs';
 
-function isTopicAchievementForSubjectV2(achievement, subject) {
-  if (achievement.kind !== 'topic') return false;
-  if (!subject || !Array.isArray(subject.categories)) return false;
-
+function topicAchievementCategoryIdFromCondition(condition) {
   const categoryIdByCondition = {
     complete_architecture: 1,
     complete_memory: 2,
@@ -13,9 +10,17 @@ function isTopicAchievementForSubjectV2(achievement, subject) {
     complete_multiproc: 6
   };
 
-  const categoryId = categoryIdByCondition[achievement.condition] ?? null;
-  if (!categoryId) return false;
-  return subject.categories.some((c) => c.id === categoryId);
+  return categoryIdByCondition[String(condition ?? '')] ?? null;
+}
+
+function topicAchievementCategoryIdForSubjectV2(achievement, subject) {
+  if (achievement.kind !== 'topic') return null;
+  if (!subject || !Array.isArray(subject.categories)) return null;
+
+  const categoryId = topicAchievementCategoryIdFromCondition(achievement.condition);
+  if (!categoryId) return null;
+  const exists = subject.categories.some((c) => c && c.id === categoryId);
+  return exists ? categoryId : null;
 }
 
 export function globalAchievementDefinitionsV2() {
@@ -27,7 +32,8 @@ export function subjectAchievementDefinitionsV2(subject) {
   const defs = [];
 
   for (const a of ACHIEVEMENTS) {
-    if (isTopicAchievementForSubjectV2(a, subject)) defs.push(a);
+    const categoryId = topicAchievementCategoryIdForSubjectV2(a, subject);
+    if (categoryId) defs.push({ ...a, categoryId });
   }
 
   const categories = Array.isArray(subject.categories) ? subject.categories : [];

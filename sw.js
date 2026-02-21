@@ -1,6 +1,6 @@
 /* StudyTracker Service Worker (minimal PWA offline support) */
 
-const CACHE_VERSION = 'v47';
+const CACHE_VERSION = 'v58';
 const STATIC_CACHE = `studytracker-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `studytracker-runtime-${CACHE_VERSION}`;
 

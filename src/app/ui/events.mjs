@@ -3,7 +3,15 @@ import { applyTheme, showNotification } from '../../utils/helpers.js';
 import { completeTopicReview, toggleTopicCompleted } from '../features/topics/actions.mjs';
 import { setActiveView } from './flow.mjs';
 import { setMapViewMode } from '../features/subject/view.mjs';
-import { setAlarmMode, setDifficulty, setPomodoroMode, startOrPauseTimer, stopTimer } from '../features/timer/timer.mjs';
+import {
+  setAlarmMode,
+  setCustomAlarmMinutes,
+  setCustomPomodoroMinutes,
+  setDifficulty,
+  setPomodoroMode,
+  startOrPauseTimer,
+  stopTimer
+} from '../features/timer/timer.mjs';
 import { addNewNote, deleteActiveNote, ensureSubjectNotes, getActiveNote, normalizeHttpUrl, renameActiveNote, renderGlobalSkillTree, renderNotes } from '../features/notes/notes-skilltree-stats.mjs';
 import { exportBackupToFile, importBackupText, resetData, saveData } from '../core/storage.mjs';
 import { checkSubjectAchievementsV2 } from '../features/achievements/core.mjs';
@@ -90,14 +98,49 @@ export function setupEventListeners() {
     difficultySelect.addEventListener('change', () => setDifficulty(difficultySelect.value));
   }
 
-  const pomodoroModeSelect = byId('pomodoroModeSelect');
+  const pomodoroModeSelect = byId('pomodoroMode');
   if (pomodoroModeSelect) {
     pomodoroModeSelect.addEventListener('change', () => setPomodoroMode(pomodoroModeSelect.value));
   }
 
-  const alarmModeSelect = byId('alarmModeSelect');
+  const alarmModeSelect = byId('alarmMode');
   if (alarmModeSelect) {
     alarmModeSelect.addEventListener('change', () => setAlarmMode(alarmModeSelect.value));
+  }
+
+  const pomodoroWorkMin = byId('pomodoroWorkMin');
+  const pomodoroBreakMin = byId('pomodoroBreakMin');
+  const pomodoroCustomApplyBtn = byId('pomodoroCustomApplyBtn');
+  if (pomodoroCustomApplyBtn) {
+    pomodoroCustomApplyBtn.addEventListener('click', () => {
+      const w = Number(pomodoroWorkMin?.value ?? '');
+      const b = Number(pomodoroBreakMin?.value ?? '');
+      setCustomPomodoroMinutes(w, b);
+    });
+  }
+  const pomodoroKeyHandler = (e) => {
+    if (e.key !== 'Enter') return;
+    const w = Number(pomodoroWorkMin?.value ?? '');
+    const b = Number(pomodoroBreakMin?.value ?? '');
+    setCustomPomodoroMinutes(w, b);
+  };
+  if (pomodoroWorkMin) pomodoroWorkMin.addEventListener('keydown', pomodoroKeyHandler);
+  if (pomodoroBreakMin) pomodoroBreakMin.addEventListener('keydown', pomodoroKeyHandler);
+
+  const alarmCustomMin = byId('alarmCustomMin');
+  const alarmCustomApplyBtn = byId('alarmCustomApplyBtn');
+  if (alarmCustomApplyBtn) {
+    alarmCustomApplyBtn.addEventListener('click', () => {
+      const m = Number(alarmCustomMin?.value ?? '');
+      setCustomAlarmMinutes(m);
+    });
+  }
+  if (alarmCustomMin) {
+    alarmCustomMin.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const m = Number(alarmCustomMin.value ?? '');
+      setCustomAlarmMinutes(m);
+    });
   }
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -254,6 +297,9 @@ export function setupEventListeners() {
   }
 
   const subjectImportFile = byId('subjectImportFile');
+  const subjectImportText = byId('subjectImportText');
+  const subjectImportApplyBtn = byId('subjectImportApplyBtn');
+  const subjectImportClearBtn = byId('subjectImportClearBtn');
   const subjectImportStatus = byId('subjectImportStatus');
   if (subjectImportFile) {
     subjectImportFile.addEventListener('change', () => {
@@ -285,6 +331,41 @@ export function setupEventListeners() {
         if (subjectImportStatus) subjectImportStatus.textContent = 'No se pudo leer el archivo.';
       };
       reader.readAsText(file);
+    });
+  }
+
+  if (subjectImportApplyBtn) {
+    subjectImportApplyBtn.addEventListener('click', () => {
+      const raw = String(subjectImportText?.value ?? '').trim();
+      if (!raw) {
+        if (subjectImportStatus) subjectImportStatus.textContent = 'Pegá un JSON para importar.';
+        return;
+      }
+
+      try {
+        if (subjectImportStatus) subjectImportStatus.textContent = 'Importandoâ€¦';
+        const payload = JSON.parse(raw);
+        applyImportedSubjectToDraft(payload);
+        setAddSubjectModalTab('manual');
+        if (subjectImportStatus) {
+          subjectImportStatus.textContent =
+            'ImportaciÃ³n lista. RevisÃ¡ y tocÃ¡ â€œCrearâ€.';
+        }
+      } catch (err) {
+        console.error(err);
+        if (subjectImportStatus) {
+          subjectImportStatus.textContent =
+            'No se pudo importar: JSON invÃ¡lido o estructura no soportada.';
+        }
+      }
+    });
+  }
+
+  if (subjectImportClearBtn) {
+    subjectImportClearBtn.addEventListener('click', () => {
+      if (subjectImportText) subjectImportText.value = '';
+      if (subjectImportFile) subjectImportFile.value = '';
+      if (subjectImportStatus) subjectImportStatus.textContent = '';
     });
   }
 
