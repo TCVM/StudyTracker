@@ -393,6 +393,7 @@ export function addSubject() {
         level: Math.max(1, Math.min(20, Number(t.depth) || 1)),
         completed: false,
         completedAt: null,
+        completionXp: null,
         reviews: []
       }));
 

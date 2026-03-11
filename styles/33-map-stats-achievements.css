@@ -1,0 +1,168 @@
+﻿
+.map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.legend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(45, 55, 72, 0.06);
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.dot-pending { background: #a0aec0; }
+.dot-due { background: #ed8936; }
+.dot-done { background: #48bb78; }
+
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.map-marker {
+    border: 1px solid rgba(45, 55, 72, 0.12);
+    background: #f7fafc;
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+    text-align: left;
+    min-height: 64px;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-marker:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+}
+
+.map-marker .marker-title {
+    font-weight: 900;
+    color: #2d3748;
+    font-size: 0.95rem;
+}
+
+.map-marker .marker-sub {
+    margin-top: 4px;
+    font-weight: 700;
+    color: #4a5568;
+    font-size: 0.85rem;
+}
+
+.map-marker.pending::before,
+.map-marker.due::before,
+.map-marker.done::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+}
+
+.map-marker.pending::before { background: #a0aec0; }
+.map-marker.due::before { background: #ed8936; box-shadow: 0 0 0 4px rgba(237, 137, 54, 0.18); }
+.map-marker.done::before { background: #48bb78; }
+
+.skills-grid,
+.stats-grid,
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.achievement-group {
+    grid-column: 1 / -1;
+}
+
+.achievement-group-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.06);
+    border: 1px solid rgba(102, 126, 234, 0.14);
+    cursor: pointer;
+    user-select: none;
+}
+
+.achievement-group-toggle:hover {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.22);
+}
+
+.achievement-group-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.achievement-group-label {
+    font-weight: 800;
+}
+
+.achievement-group-chevron {
+    font-weight: 900;
+    opacity: 0.9;
+}
+
+.achievement-group-content {
+    margin-top: 10px;
+}
+
+.achievement-group-title {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    padding: 0;
+}
+
+.card {
+    background: #f7fafc;
+    border: 1px solid rgba(45, 55, 72, 0.12);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.card-title {
+    font-weight: 900;
+    color: #2d3748;
+    margin-bottom: 6px;
+}
+
+.card-desc {
+    color: #4a5568;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.card-meta {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    color: #4a5568;
+    font-weight: 800;
+}
+

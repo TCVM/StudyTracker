@@ -1,0 +1,230 @@
+﻿
+.topic-badges {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.topic-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 0.8rem;
+    border: 1px solid rgba(237, 137, 54, 0.4);
+    background: rgba(237, 137, 54, 0.18);
+    color: #9c4221;
+}
+
+.topic-badge:hover {
+    filter: brightness(1.02);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.progress-percentage {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.categories-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.category-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.category-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.category-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.category-progress {
+    margin-bottom: 16px;
+}
+
+.category-progress .progress-header {
+    font-size: 0.9rem;
+}
+
+.category-progress .progress-percentage {
+    font-size: 1rem;
+}
+
+.category-progress .progress-bar {
+    height: 8px;
+}
+
+.topics-list {
+    list-style: none;
+    display: grid;
+    gap: 12px;
+}
+
+.topic-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.topic-item:hover {
+    background: #edf2f7;
+}
+
+.topic-item.completed {
+    background: #c6f6d5;
+    text-decoration: line-through;
+    color: #22543d;
+}
+
+.topic-item.completed .topic-action {
+    text-decoration: none;
+}
+
+.topic-item.review-due {
+    box-shadow: inset 0 0 0 2px rgba(237, 137, 54, 0.35);
+}
+
+.topic-item.review-due .topic-action {
+    border-color: rgba(237, 137, 54, 0.35);
+}
+
+.topic-item.review-due .topic-action:hover {
+    border-color: rgba(237, 137, 54, 0.55);
+}
+
+.topic-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.topic-checkbox:hover {
+    background: #667eea;
+}
+
+.topic-item.completed .topic-checkbox {
+    background: #48bb78;
+    border-color: #48bb78;
+}
+
+.topic-checkbox::after {
+    content: '\2713';
+    color: white;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.topic-item.completed .topic-checkbox::after {
+    opacity: 1;
+}
+
+.topic-name {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #4a5568;
+    transition: all 0.2s ease;
+}
+
+.topic-item.completed .topic-name {
+    color: #22543d;
+}
+
+.footer {
+    margin-top: 40px;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+

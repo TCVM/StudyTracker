@@ -68,12 +68,13 @@ export function renderCategories() {
                             data-category-id="${category.id}"
                             data-topic-index="${topicIndex}"
                             style="padding-left: ${12 + ((topic.level - 1) * 20)}px">
-                            <div class="topic-checkbox"></div>
-                            <div class="topic-name">${escapeHtml(topic.name ?? '')}</div>
-                            ${reviewBtn}
-                        </li>
-                    `;
-                }).join('')}
+                             <div class="topic-checkbox"></div>
+                             <div class="topic-name">${escapeHtml(topic.name ?? '')}</div>
+                             <button class="topic-note-btn" type="button" data-category-id="${category.id}" data-topic-index="${topicIndex}" title="Notas de tema">📝</button>
+                             ${reviewBtn}
+                         </li>
+                     `;
+                 }).join('')}
             </ul>
         `;
 

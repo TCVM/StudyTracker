@@ -56,6 +56,21 @@ export function formatDateTime(timestamp) {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
+export function formatDurationMs(ms) {
+    // display a friendly duration from milliseconds
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    const parts = [];
+    if (days) parts.push(`${days}d`);
+    if (hours) parts.push(`${hours}h`);
+    if (minutes) parts.push(`${minutes}m`);
+    if (seconds || parts.length === 0) parts.push(`${seconds}s`);
+    return parts.join(' ');
+}
+
 export function ensureNotificationStyles() {
     if (document.getElementById('notificationStyles')) return;
     const style = document.createElement('style');
@@ -73,15 +88,22 @@ export function ensureNotificationStyles() {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 14px 18px;
-            border-radius: 10px;
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            animation: slideIn 0.25s ease-out;
-            font-weight: 800;
+            padding: 14px 16px;
+            border-radius: 12px;
             max-width: min(420px, calc(100vw - 40px));
+            z-index: 1100;
+            animation: slideIn 0.25s ease-out;
+            font-weight: 750;
+            line-height: 1.35;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.26);
+            backdrop-filter: blur(10px);
+        }
+        body.dark-mode .notification {
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 18px 56px rgba(0, 0, 0, 0.42);
         }
     `;
     document.head.appendChild(style);

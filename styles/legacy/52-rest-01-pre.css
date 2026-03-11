@@ -1,0 +1,7 @@
+﻿/* Legacy pre entrypoint */
+/* Split for maintainability; keep cascade order */
+
+@import url("./pre/01-subject-hero-exams.css");
+@import url("./pre/02-timer-actions.css");
+@import url("./pre/03-mini-timer-actions.css");
+

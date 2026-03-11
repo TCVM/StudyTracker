@@ -11,6 +11,7 @@ export const DIFFICULTY_CONFIG = {
     xpPerMinute: 6,
     xpTopicComplete: 22,
     xpReviewComplete: 14,
+    xpExamComplete: 20,
     tierMinutes: [0, 5, 10, 15, 20, 25],
     tierMultiplierStep: 0.15
   },
@@ -20,6 +21,7 @@ export const DIFFICULTY_CONFIG = {
     xpPerMinute: 7,
     xpTopicComplete: 26,
     xpReviewComplete: 16,
+    xpExamComplete: 24,
     tierMinutes: [0, 6, 12, 18, 24, 30],
     tierMultiplierStep: 0.14
   }

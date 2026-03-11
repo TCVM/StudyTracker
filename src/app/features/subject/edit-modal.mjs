@@ -443,12 +443,10 @@ function applyEditDraftToSubject(subject) {
       .map((t) => {
         const depth = Math.max(1, Math.min(20, Number(t.depth) || 1));
         const src = (t.sourceIndex != null) ? originalTopics[t.sourceIndex] : null;
-        const obj = src ? src : { name: '', level: 1, completed: false, completedAt: null, reviews: [] };
+        const obj = src ? src : { name: '', level: 1, completed: false, completedAt: null, completionXp: null, reviews: [] };
         obj.name = String(t.name ?? '').trim();
         obj.level = depth;
-        if (!Array.isArray(obj.reviews)) obj.reviews = [];
-        if (obj.completed && obj.completedAt == null) obj.completedAt = Date.now();
-        return obj;
+        if (obj.completionXp == null) obj.completionXp = null;
       });
 
     const catObj = originalCat ? { ...originalCat } : { id: catId };
@@ -526,6 +524,7 @@ function resetSubjectProgress(subject) {
     for (const topic of category.topics ?? []) {
       topic.completed = false;
       topic.completedAt = null;
+      topic.completionXp = null;
       topic.reviews = [];
     }
   }

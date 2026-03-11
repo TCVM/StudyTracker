@@ -38,6 +38,10 @@ export function awardXp(subject, baseXp, opts = null) {
   if (reason === 'topic_complete' && skills.has('skill_topic_bonus')) {
     gained += 5;
   }
+  if (reason === 'exam_complete' && skills.has('skill_topic_bonus')) {
+    // reuse topic bonus for exams too
+    gained += 5;
+  }
 
   subject.meta.xp += gained;
   const appState = getAppState();
@@ -45,11 +49,13 @@ export function awardXp(subject, baseXp, opts = null) {
     appState.globalMeta.xp += gained;
   }
 
+  // handle level ups for subject
   while (subject.meta.xp >= xpToNextLevel(subject.meta.level)) {
     subject.meta.xp -= xpToNextLevel(subject.meta.level);
     subject.meta.level += 1;
   }
 
+  // handle level ups for global
   while (appState?.globalMeta && appState.globalMeta.xp >= xpToNextLevel(appState.globalMeta.level)) {
     appState.globalMeta.xp -= xpToNextLevel(appState.globalMeta.level);
     appState.globalMeta.level += 1;
@@ -57,6 +63,66 @@ export function awardXp(subject, baseXp, opts = null) {
   }
 
   return gained;
+}
+
+// deduct xp and adjust levels downward if needed
+export function deductXp(subject, amount) {
+  if (!subject || !subject.meta) return 0;
+  const base = Math.max(0, Math.floor(Number(amount) || 0));
+  if (base <= 0) return 0;
+
+  subject.meta.xp -= base;
+  const appState = getAppState();
+  if (appState?.globalMeta) {
+    appState.globalMeta.xp -= base;
+  }
+
+  // adjust subject levels downward if xp negative
+  while (subject.meta.xp < 0 && subject.meta.level > 1) {
+    subject.meta.level -= 1;
+    subject.meta.xp += xpToNextLevel(subject.meta.level);
+  }
+  if (subject.meta.xp < 0) {
+    subject.meta.xp = 0;
+  }
+
+  // adjust global levels downward similarly
+  if (appState?.globalMeta) {
+    while (appState.globalMeta.xp < 0 && appState.globalMeta.level > 1) {
+      appState.globalMeta.level -= 1;
+      appState.globalMeta.xp += xpToNextLevel(appState.globalMeta.level);
+    }
+    if (appState.globalMeta.xp < 0) appState.globalMeta.xp = 0;
+  }
+
+  return base;
+}
+
+export function getGlobalLevelInfo() {
+  const appState = getAppState();
+  if (!appState?.globalMeta) return null;
+  const level = Number(appState.globalMeta.level || 1);
+  const xp = Number(appState.globalMeta.xp || 0);
+  const needed = xpToNextLevel(level);
+  const percent = needed > 0 ? Math.round((xp / needed) * 100) : 0;
+  return { level, xp, needed, percent };
+}
+
+export function getAverageSubjectLevelPercent() {
+  const appState = getAppState();
+  if (!appState?.subjects || appState.subjects.length === 0) return 0;
+  let sum = 0;
+  let count = 0;
+  for (const subj of appState.subjects) {
+    const lvl = Number(subj.meta?.level || 1);
+    const xp = Number(subj.meta?.xp || 0);
+    const need = xpToNextLevel(lvl);
+    if (need > 0) {
+      sum += Math.min(100, Math.round((xp / need) * 100));
+      count += 1;
+    }
+  }
+  return count > 0 ? Math.round(sum / count) : 0;
 }
 
 export function timerMultiplierInfo(subject, streakSeconds) {

@@ -5,4 +5,5 @@ export function registerServiceWorker() {
   });
 }
 
-registerServiceWorker();
+// Desactivado temporalmente para desarrollo - el SW interfiere con los módulos
+// registerServiceWorker();

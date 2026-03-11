@@ -2,14 +2,14 @@ import { showNotification } from '../../../utils/helpers.js';
 import { getCurrentSubject } from '../../core/state.mjs';
 import { checkAchievementsV2 } from '../achievements/core.mjs';
 import { saveData } from '../../core/storage.mjs';
-import { awardXp, getDifficultyConfigForSubject, nextReviewDueAtMs } from '../xp/xp.mjs';
+import { awardXp, deductXp, getDifficultyConfigForSubject, nextReviewDueAtMs } from '../xp/xp.mjs';
 import { renderAllNonTimer } from '../../ui/render.mjs';
 
 export function toggleTopicCompleted(categoryId, topicIndex) {
   const subject = getCurrentSubject();
   if (!subject) return;
 
-  const category = subject.categories.find((c) => c.id === categoryId);
+  const category = subject.categories.find((c) => String(c?.id) === String(categoryId));
   if (!category) return;
   const topic = category.topics[topicIndex];
   if (!topic) return;
@@ -22,10 +22,21 @@ export function toggleTopicCompleted(categoryId, topicIndex) {
     topic.completedAt = now;
     topic.reviews = [];
 
-    const diff = getDifficultyConfigForSubject(subject);
-    const gained = awardXp(subject, diff?.xpTopicComplete ?? 0, { reason: 'topic_complete' }) ?? 0;
-    showNotification(`Tema completado! +${gained} XP`);
+    // only award xp the first time or after a previous uncompletion
+    if (!topic.completionXp) {
+      const diff = getDifficultyConfigForSubject(subject);
+      const base = diff?.xpTopicComplete ?? 0;
+      const gained = awardXp(subject, base, { reason: 'topic_complete' }) ?? 0;
+      topic.completionXp = base;
+      showNotification(`Tema completado! +${gained} XP`);
+    }
   } else {
+    // user unmarked the topic: deduct xp if it had been awarded
+    if (topic.completionXp) {
+      deductXp(subject, topic.completionXp);
+      showNotification(`XP revertida (-${topic.completionXp})`);
+      topic.completionXp = null;
+    }
     topic.completedAt = null;
     topic.reviews = [];
   }
@@ -41,7 +52,7 @@ export function completeTopicReview(categoryId, topicIndex) {
   const subject = getCurrentSubject();
   if (!subject) return;
 
-  const category = subject.categories.find((c) => c.id === categoryId);
+  const category = subject.categories.find((c) => String(c?.id) === String(categoryId));
   if (!category) return;
   const topic = category.topics[topicIndex];
   if (!topic || !topic.completed) return;

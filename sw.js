@@ -1,6 +1,6 @@
 /* StudyTracker Service Worker (minimal PWA offline support) */
 
-const CACHE_VERSION = 'v58';
+const CACHE_VERSION = 'v68';
 const STATIC_CACHE = `studytracker-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `studytracker-runtime-${CACHE_VERSION}`;
 
@@ -8,6 +8,21 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './styles.css',
+  './styles/00-base.css',
+  './styles/05-components.css',
+  './styles/06-animations.css',
+  './styles/07-responsive.css',
+  './styles/10-home.css',
+  './styles/15-shared.css',
+  './styles/20-exams-practices.css',
+  './styles/25-timer.css',
+  './styles/27-sessions.css',
+  './styles/32-subject-topics.css',
+  './styles/33-map-stats-achievements.css',
+  './styles/30-subject-modals.css',
+  './styles/35-notes-skilltree.css',
+  './styles/40-theme-dark.css',
+  './styles/41-theme-compat.css',
   './src/main.mjs',
   './src/register-sw.mjs',
   './src/app/bootstrap.mjs',
@@ -16,16 +31,25 @@ const STATIC_ASSETS = [
   './src/app/shared/state.mjs',
   './src/app/core/constants.mjs',
   './src/app/core/storage.mjs',
+  './src/app/core/idb.mjs',
   './src/app/ui/flow.mjs',
   './src/app/ui/events.mjs',
   './src/app/ui/home.mjs',
   './src/app/ui/render.mjs',
   './src/app/ui/confirm-modal.mjs',
+  './src/app/ui/prompt-modal.mjs',
+  './src/app/ui/thumbs.mjs',
+  './src/app/ui/image-viewer.mjs',
   './src/app/features/xp/xp.mjs',
   './src/app/features/timer/timer.mjs',
   './src/app/features/timer/mini-timer.mjs',
   './src/app/features/notes/notes-skilltree-stats.mjs',
   './src/app/features/topics/actions.mjs',
+  './src/app/features/topic-notes/topic-notes.mjs',
+  './src/app/features/exams/exams.mjs',
+  './src/app/features/exams/answers-modal.mjs',
+  './src/app/features/practices/practices.mjs',
+  './src/app/features/practices/answers-modal.mjs',
   './src/app/features/achievements/core.mjs',
   './src/app/features/achievements/ui.mjs',
   './src/app/features/achievements/definitions.mjs',
@@ -101,28 +125,49 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Same-origin assets: stale-while-revalidate (fast + updates without manual refresh).
+  const isCodeAsset =
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    url.pathname.endsWith('.mjs') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css');
+
+  // Same-origin assets:
+  // - code assets: network-first to avoid "blank screens" from mixed cached versions
+  // - others: stale-while-revalidate (fast + updates without manual refresh)
   if (url.origin === self.location.origin) {
     event.respondWith(
       (async () => {
-        const cached = await caches.match(request);
         const cache = await caches.open(STATIC_CACHE);
 
-        const fetchPromise = fetch(request)
-          .then((response) => {
-            cache.put(request, response.clone());
-            return response;
-          })
-          .catch(() => null);
+        if (isCodeAsset) {
+          try {
+            const network = await fetch(request);
+            cache.put(request, network.clone());
+            return network;
+          } catch {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+            return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+          }
+        } else {
+          const cached = await caches.match(request);
+          const fetchPromise = fetch(request)
+            .then((response) => {
+              cache.put(request, response.clone());
+              return response;
+            })
+            .catch(() => null);
 
-        if (cached) {
-          event.waitUntil(fetchPromise);
-          return cached;
+          if (cached) {
+            event.waitUntil(fetchPromise);
+            return cached;
+          }
+
+          const network = await fetchPromise;
+          if (network) return network;
+          return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
         }
-
-        const network = await fetchPromise;
-        if (network) return network;
-        return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       })()
     );
     return;

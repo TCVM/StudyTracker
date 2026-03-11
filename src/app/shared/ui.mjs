@@ -2,7 +2,7 @@ import { showConfirmModalV2 } from '../ui/confirm-modal.mjs';
 import { getAppState, getCurrentSubject } from '../core/state.mjs';
 import { getSharedSubjects, getSharedSubjectsLoaded, getSharedSubjectsLoadError } from './state.mjs';
 import { estimateSharedSubjectSize, normalizeBannerUrl } from './core.mjs';
-import { escapeHtml, showNotification } from '../../utils/helpers.js';
+import { escapeHtml, showNotification, formatDurationMs } from '../../utils/helpers.js';
 import { ensureSubjectNotes } from '../features/notes/notes-skilltree-stats.mjs';
 import { addSubjectDraftId } from '../features/subject/drafts.mjs';
 import { createSubject, saveData } from '../core/storage.mjs';
@@ -44,6 +44,250 @@ export function renderSubjectBanner() {
   subjectBannerImg.alt = `Banner de ${subject.name ?? 'materia'}`;
 }
 
+export function renderExamCountdown() {
+  const countdownEl = byId('examCountdown');
+  const listEl = byId('upcomingExamsList');
+  const pillEl = byId('subjectNextExamPill');
+  if (!countdownEl && !listEl && !pillEl) return;
+
+  const subject = getCurrentSubject();
+  if (!subject) {
+    if (countdownEl) countdownEl.innerHTML = '';
+    if (listEl) listEl.innerHTML = '';
+    if (pillEl) pillEl.hidden = true;
+    return;
+  }
+
+  const upcomingRaw = Array.isArray(subject.upcomingExams) ? subject.upcomingExams : [];
+  const upcoming = upcomingRaw
+    .filter((x) => x && typeof x === 'object')
+    .map((x) => ({ id: String(x.id ?? ''), title: String(x.title ?? '').trim(), at: Number(x.at) }))
+    .filter((x) => x.id && Number.isFinite(x.at))
+    .sort((a, b) => a.at - b.at);
+
+  const now = Date.now();
+  const next = upcoming.find((x) => x.at > now) ?? null;
+
+  const formatDateTimeShort = (ts) => {
+    const d = new Date(ts);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  };
+
+  const getUrgency = (remainingMs) => {
+    if (remainingMs <= 0) return 'overdue';
+    if (remainingMs < 24 * 60 * 60 * 1000) return 'soon';
+    return 'ok';
+  };
+
+  const countdownText = (ts, prefix = 'Examen') => {
+    const remaining = ts - now;
+    if (remaining <= 0) return `${prefix} vencido`;
+    return `${prefix} en ${formatDurationMs(remaining)}`;
+  };
+
+  // Próximo (resumen) en el panel de Exámenes
+  if (countdownEl) {
+    if (!next) {
+      countdownEl.innerHTML = '';
+      countdownEl.dataset.urgency = '';
+    } else {
+      const remaining = next.at - now;
+      const urgency = getUrgency(remaining);
+      const title = next.title ? `${next.title} — ` : '';
+      const text = `Próximo — ${title}${countdownText(next.at)}`;
+      const when = `(${formatDateTimeShort(next.at)})`;
+
+      countdownEl.dataset.urgency = urgency;
+      countdownEl.innerHTML = '';
+
+      const main = document.createElement('span');
+      main.style.fontWeight = '800';
+      main.textContent = text;
+
+      const sub = document.createElement('span');
+      sub.style.fontSize = '0.92em';
+      sub.style.opacity = '0.9';
+      sub.textContent = ` ${when}`;
+
+      countdownEl.appendChild(main);
+      countdownEl.appendChild(sub);
+    }
+  }
+
+  // Próximo (pill) en el área principal de la materia
+  if (pillEl) {
+    if (!next) {
+      pillEl.hidden = true;
+      pillEl.textContent = '';
+      pillEl.dataset.urgency = '';
+    } else {
+      pillEl.hidden = false;
+      const title = next.title ? `${next.title} — ` : '';
+      pillEl.textContent = `Próximo — ${title}${countdownText(next.at)} (${formatDateTimeShort(next.at)})`;
+      pillEl.dataset.urgency = getUrgency(next.at - now);
+    }
+  }
+
+  // Lista de próximos exámenes (todos)
+  if (listEl) {
+    listEl.innerHTML = '';
+
+    if (!upcoming.length) {
+      listEl.innerHTML = `<div class="upcoming-exam-item"><div class="upcoming-exam-left"><div class="upcoming-exam-title">Sin próximos exámenes</div><div class="upcoming-exam-meta">Agregá uno con “📅 Próximo”.</div></div></div>`;
+      return;
+    }
+
+    const makeRow = (x, options = null) => {
+      const row = document.createElement('div');
+      row.className = 'upcoming-exam-item';
+      row.dataset.urgency = getUrgency(x.at - now);
+      if (options?.isNext) row.classList.add('is-next');
+
+      const left = document.createElement('div');
+      left.className = 'upcoming-exam-left';
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'upcoming-exam-title';
+      if (options?.isNext) {
+        titleEl.textContent = x.title ? `Próximo — ${x.title}` : 'Próximo — Examen';
+      } else {
+        titleEl.textContent = x.title || 'Examen';
+      }
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'upcoming-exam-meta';
+      const remaining = x.at - now;
+      const rel = remaining <= 0 ? `Vencido hace ${formatDurationMs(Math.abs(remaining))}` : `En ${formatDurationMs(remaining)}`;
+      metaEl.textContent = `${rel} (${formatDateTimeShort(x.at)})`;
+
+      left.appendChild(titleEl);
+      left.appendChild(metaEl);
+
+      const actions = document.createElement('div');
+      actions.className = 'upcoming-exam-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn btn-secondary btn-small';
+      editBtn.textContent = 'Editar';
+      editBtn.dataset.action = 'upcoming_edit';
+      editBtn.dataset.examId = x.id;
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-danger btn-small';
+      delBtn.textContent = 'Eliminar';
+      delBtn.dataset.action = 'upcoming_delete';
+      delBtn.dataset.examId = x.id;
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
+      row.appendChild(left);
+      row.appendChild(actions);
+
+      return row;
+    };
+
+    if (next) {
+      listEl.appendChild(makeRow(next, { isNext: true }));
+    }
+
+    const rest = upcoming.filter((x) => !next || x.id !== next.id);
+    if (!rest.length) return;
+
+    if (rest.length > 4) {
+      const scroll = document.createElement('div');
+      scroll.className = 'upcoming-exams-scroll';
+      rest.forEach((x) => scroll.appendChild(makeRow(x)));
+      listEl.appendChild(scroll);
+    } else {
+      rest.forEach((x) => listEl.appendChild(makeRow(x)));
+    }
+  }
+}
+
+export function showExamDateModal(examId = null) {
+  const modal = byId("examDateModal");
+  if (!modal) return;
+  const subject = getCurrentSubject();
+  if (!subject) return;
+
+  const titleEl = byId("examDateModalTitle");
+  const titleInput = byId("examTitleInput");
+  const dateTimeInput = byId("examDateTimeInput");
+
+  const toLocalInputValue = (ts) => {
+    const d = new Date(ts);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
+  const upcoming = Array.isArray(subject.upcomingExams) ? subject.upcomingExams : [];
+  const selected = examId ? upcoming.find((x) => String(x?.id) === String(examId)) : null;
+
+  modal.dataset.examId = selected ? String(selected.id) : '';
+  if (titleEl) titleEl.textContent = selected ? 'Editar próximo examen' : 'Agregar próximo examen';
+  if (titleInput) titleInput.value = selected ? String(selected.title ?? '') : '';
+  if (dateTimeInput) dateTimeInput.value = selected?.at ? toLocalInputValue(Number(selected.at)) : "";
+
+  updateExamDatePreview();
+  modal.classList.add("active");
+}
+export function hideExamDateModal() {
+  const modal = byId("examDateModal");
+  modal?.classList.remove("active");
+  if (modal) modal.dataset.examId = '';
+}
+export function updateExamDatePreview() {
+  const preview = byId("examDatePreview");
+  const titleInput = byId("examTitleInput");
+  const dateTimeInput = byId("examDateTimeInput");
+  if (!preview) return;
+
+  const raw = String(dateTimeInput?.value ?? "").trim();
+  if (!raw) {
+    preview.innerHTML = "";
+    return;
+  }
+
+  const parseLocal = (value) => {
+    const parts = value.split("T");
+    if (parts.length !== 2) return null;
+    const [y, m, d] = parts[0].split("-").map((n) => Number(n));
+    const [hh, mm] = parts[1].split(":").map((n) => Number(n));
+    if (![y, m, d, hh, mm].every((n) => Number.isFinite(n))) return null;
+    return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+  };
+
+  const dateObj = parseLocal(raw);
+  if (!dateObj || Number.isNaN(dateObj.getTime())) {
+    preview.innerHTML = "";
+    return;
+  }
+
+  const formatted = dateObj.toLocaleString("es-AR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  const title = String(titleInput?.value ?? '').trim();
+  preview.innerHTML = '<strong>Resumen:</strong> ';
+  preview.append(document.createTextNode(`${title ? `${title} — ` : ''}${formatted}`));
+}
 export function renderSharedSubjects() {
   const sharedSubjectsGrid = byId('sharedSubjectsGrid');
   const sharedSubjectsEmpty = byId('sharedSubjectsEmpty');

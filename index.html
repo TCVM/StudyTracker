@@ -94,6 +94,27 @@
                         </div>
                     </div>
 
+                    <!-- Barra de Nivel Global -->
+                    <div class="global-level-section">
+                        <h2>Nivel Global</h2>
+                        <div class="global-level-bar">
+                            <div class="level-bar-fill" id="globalLevelBarFill"></div>
+                            <div class="level-bar-text" id="globalLevelBarText">0%</div>
+                        </div>
+                        <div class="level-info">
+                            <span class="level-number" id="globalLevelNumber">Nivel 1</span>
+                            <span class="xp-info" id="globalXpInfo">0 / 100 XP</span>
+                        </div>
+                    </div>
+
+                    <div class="panel" aria-label="Próximos exámenes">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Próximos exámenes</h2>
+                            <div class="panel-subtitle">Lo más cercano de todas tus materias</div>
+                        </div>
+                        <div class="home-upcoming-list" id="homeUpcomingExamsList"></div>
+                    </div>
+
                      <div class="quick-actions">
                          <h2>Acciones Rápidas</h2>
                          <div class="actions-grid">
@@ -295,18 +316,20 @@
                                         <div class="xp-bar" aria-label="Progreso de nivel">
                                             <div class="xp-fill" id="xpFill" style="width: 0%"></div>
                                         </div>
-                                        <div class="xp-sub">
-                                            <span>SP: <span id="skillPointsText">0</span></span>
-                                            <span id="focusTodayText">Hoy: 0m</span>
-                                        </div>
+                                    <div class="xp-sub">
+                                        <span>SP: <span id="skillPointsText">0</span></span>
+                                        <span id="focusTodayText">Hoy: 0m</span>
                                     </div>
+                                    <div class="next-exam-pill" id="subjectNextExamPill" hidden></div>
                                 </div>
-                            </section>
+                            </div>
+                        </section>
 
                             <nav class="view-tabs" aria-label="Vistas">
                                 <button class="tab-btn active" data-view="listView" type="button">Lista</button>
                                 <button class="tab-btn" data-view="mapView" type="button">Mapa</button>
-                                <button class="tab-btn" data-view="notesView" type="button">Notas</button>
+                                <button class="tab-btn" data-view="practicesView" type="button">Prácticas</button>
+                                <button class="tab-btn" data-view="examsView" type="button">Exámenes</button>
                                 <button class="tab-btn" data-view="statsView" type="button">Stats</button>
                             </nav>
                         </div>
@@ -342,38 +365,41 @@
                             </div>
                         </section>
 
-                        <section class="view" id="notesView" aria-label="Notas">
+                        <section class="view" id="practicesView" aria-label="Prácticas">
                             <div class="panel">
                                 <div class="panel-header">
-                                    <h2 class="panel-title">Notas</h2>
-                                    <div class="panel-subtitle">Anotador + links útiles por materia</div>
-                                </div>
-                                <div class="notes-grid">
-                                    <div class="notes-block">
-                                        <div class="notes-label-row">
-                                            <label class="notes-label" for="subjectNotesText">Anotador</label>
-                                            <div class="notes-toolbar">
-                                                <select id="subjectNotesSelect" class="input notes-select" aria-label="Seleccionar nota"></select>
-                                                <button id="subjectAddNoteBtn" class="btn btn-secondary btn-small" type="button">+ Nota</button>
-                                                <button id="subjectRenameNoteBtn" class="btn btn-secondary btn-small" type="button">Renombrar</button>
-                                                <button id="subjectDeleteNoteBtn" class="btn btn-secondary btn-small" type="button">Eliminar</button>
-                                            </div>
+                                    <div class="panel-header-row">
+                                        <div class="panel-header-text">
+                                            <h2 class="panel-title">Prácticas</h2>
+                                            <div class="panel-subtitle">Organiza prácticas y ejercicios (para hacer y repasar)</div>
                                         </div>
-                                        <textarea id="subjectNotesText" class="notes-textarea" placeholder="Escribe tus notas aquí..."></textarea>
-                                    </div>
-                                    <div class="notes-block">
-                                        <div class="notes-label-row">
-                                            <div class="notes-label">Links útiles</div>
+                                        <div class="panel-actions">
+                                            <button id="addPracticeBtn" class="btn btn-primary btn-small" type="button">+ Práctica</button>
                                         </div>
-                                        <div class="links-add">
-                                            <input id="subjectLinkTitle" class="input" type="text" placeholder="Título (opcional)">
-                                            <input id="subjectLinkUrl" class="input" type="url" placeholder="https://...">
-                                            <button id="subjectAddLinkBtn" class="btn btn-primary" type="button">Agregar</button>
-                                        </div>
-                                        <div class="links-list" id="subjectLinksList"></div>
-                                        <div class="links-empty" id="subjectLinksEmpty" hidden>No hay links todavía.</div>
                                     </div>
                                 </div>
+                                <div id="practicesContainer" class="practices-container"></div>
+                            </div>
+                        </section>
+
+                        <section class="view" id="examsView" aria-label="Exámenes">
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <div class="panel-header-row">
+                                        <div class="panel-header-text">
+                                            <h2 class="panel-title">Exámenes</h2>
+                                            <div class="panel-subtitle">Registro de exámenes pasados (ya rendidos)</div>
+                                        </div>
+                                        <div class="panel-actions">
+                                            <button id="setExamDateBtn" class="btn btn-secondary btn-small" type="button">📅 Próximo</button>
+                                            <button id="addExamCategoryBtn" class="btn btn-primary btn-small" type="button">+ Categoría</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="exam-countdown-info" id="examCountdown"></div>
+                                <div class="upcoming-exams" id="upcomingExamsList"></div>
+                                <div id="examsContainer" class="exams-container"></div>
+                                <input type="file" id="examFileInput" accept="*/*" hidden>
                             </div>
                         </section>
 
@@ -679,7 +705,139 @@
             <button class="btn btn-secondary" id="miniTimerStopBtn" type="button" disabled>Detener</button>
         </div>
     </div>
+    <!-- Modal para establecer fecha de examen -->
 
+    <!-- Modal: próximo examen -->
+    <div class="modal" id="examDateModal" aria-labelledby="examDateModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 id="examDateModalTitle">Agregar próximo examen</h3>
+                <button class="modal-close" id="closeExamDateModal" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="examTitleInput">Título (opcional)</label>
+                    <input type="text" id="examTitleInput" class="form-control" placeholder="Ej: Parcial 1">
+                </div>
+                <div class="form-group">
+                    <label for="examDateTimeInput">Fecha y hora</label>
+                    <input type="datetime-local" id="examDateTimeInput" class="form-control">
+                </div>
+                <div class="exam-date-preview" id="examDatePreview"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelExamDateBtn" type="button">Cancelar</button>
+                <button class="btn btn-secondary" id="clearExamDateBtn" type="button">Limpiar</button>
+                <button class="btn btn-primary" id="confirmExamDateBtn" type="button">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: notas de tema -->
+    <div class="modal" id="topicNoteModal" aria-labelledby="topicNoteModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="topicNoteModalTitle">Notas del tema</h3>
+                <button class="modal-close" id="closeTopicNoteModal" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="topic-note-meta" id="topicNoteMeta"></div>
+                <div class="form-group">
+                    <label for="topicNoteText">Anotador</label>
+                    <textarea id="topicNoteText" class="notes-textarea topic-note-textarea" placeholder="Escribe tus notas aquí..."></textarea>
+                </div>
+                <div class="topic-note-images">
+                    <div class="topic-note-images-header">
+                        <div class="notes-label">Imágenes</div>
+                        <button class="btn btn-secondary btn-small" id="topicNoteAddImageBtn" type="button">+ Imagen</button>
+                    </div>
+                    <div class="topic-note-images-grid" id="topicNoteImagesGrid"></div>
+                    <input type="file" id="topicNoteImageInput" accept="image/*" multiple hidden>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="topicNoteDeleteBtn" type="button">Limpiar</button>
+                <button class="btn btn-primary" id="topicNoteCloseBtn" type="button">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: respuesta de práctica -->
+    <div class="modal" id="practiceAnswerModal" aria-labelledby="practiceAnswerModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="practiceAnswerModalTitle">Respuesta</h3>
+                <button class="modal-close" id="closePracticeAnswerModal" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="topic-note-meta" id="practiceAnswerMeta"></div>
+                <div class="form-group">
+                    <label for="practiceAnswerText">Texto</label>
+                    <textarea id="practiceAnswerText" class="notes-textarea topic-note-textarea" placeholder="Escribe la respuesta..."></textarea>
+                </div>
+                <div class="topic-note-images">
+                    <div class="topic-note-images-header">
+                        <div class="notes-label">Imágenes</div>
+                        <button class="btn btn-secondary btn-small" id="practiceAnswerAddImageBtn" type="button">+ Imagen</button>
+                    </div>
+                    <div class="topic-note-images-grid" id="practiceAnswerImagesGrid"></div>
+                    <input type="file" id="practiceAnswerImageInput" accept="image/*" multiple hidden>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="practiceAnswerCancelBtn" type="button">Cancelar</button>
+                <button class="btn btn-primary" id="practiceAnswerSaveBtn" type="button">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: visor de imágenes -->
+    <div class="modal" id="imageViewerModal" aria-labelledby="imageViewerModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-content image-viewer-content">
+            <div class="modal-header">
+                <h3 id="imageViewerModalTitle">Imagen</h3>
+                <div class="modal-header-actions">
+                    <button class="btn btn-secondary btn-small" id="imageViewerZoomBtn" type="button">1:1</button>
+                    <button class="modal-close" id="closeImageViewerModal" type="button" aria-label="Cerrar">×</button>
+                </div>
+            </div>
+            <div class="modal-body image-viewer-body">
+                <img id="imageViewerImg" class="image-viewer-img" alt="Imagen ampliada">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="imageViewerCloseBtn" type="button">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: respuesta de examen (Q&A) -->
+    <div class="modal" id="examAnswerModal" aria-labelledby="examAnswerModalTitle" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="examAnswerModalTitle">Respuesta</h3>
+                <button class="modal-close" id="closeExamAnswerModal" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="topic-note-meta" id="examAnswerMeta"></div>
+                <div class="form-group">
+                    <label for="examAnswerText">Texto</label>
+                    <textarea id="examAnswerText" class="notes-textarea topic-note-textarea" placeholder="Escribe la respuesta..."></textarea>
+                </div>
+                <div class="topic-note-images">
+                    <div class="topic-note-images-header">
+                        <div class="notes-label">Imágenes</div>
+                        <button class="btn btn-secondary btn-small" id="examAnswerAddImageBtn" type="button">+ Imagen</button>
+                    </div>
+                    <div class="topic-note-images-grid" id="examAnswerImagesGrid"></div>
+                    <input type="file" id="examAnswerImageInput" accept="image/*" multiple hidden>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="examAnswerCancelBtn" type="button">Cancelar</button>
+                <button class="btn btn-primary" id="examAnswerSaveBtn" type="button">Guardar</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="./src/main.mjs"></script>
     <script type="module" src="./src/register-sw.mjs"></script>
 </body>

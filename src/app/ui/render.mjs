@@ -1,11 +1,13 @@
 import { escapeHtml, formatDateTime, formatHMS } from '../../utils/helpers.js';
 import { getAppState, getCurrentSubject, setCurrentSubject } from '../core/state.mjs';
 import { MAX_SESSIONS_DISPLAY } from '../core/constants.mjs';
-import { ensureSubjectNotes, renderGlobalSkillTree, renderNotes, renderStats } from '../features/notes/notes-skilltree-stats.mjs';
+import { ensureSubjectNotes, renderGlobalSkillTree, renderStats } from '../features/notes/notes-skilltree-stats.mjs';
+import { renderExams } from '../features/exams/exams.mjs';
+import { renderPractices } from '../features/practices/practices.mjs';
 import { saveData } from '../core/storage.mjs';
 import { renderAchievementsV2 } from '../features/achievements/ui.mjs';
 import { renderHomePage } from './home.mjs';
-import { renderSubjectBanner } from '../shared/ui.mjs';
+import { renderSubjectBanner, renderExamCountdown } from '../shared/ui.mjs';
 import { setActiveView } from './flow.mjs';
 import { renderCategories, renderMap, updateSubjectProgress } from '../features/subject/view.mjs';
 import { updateTimerUi } from '../features/timer/timer.mjs';
@@ -75,10 +77,12 @@ export function renderSessions() {
 
 export function renderAllNonTimer() {
   renderSubjectBanner();
+  renderExamCountdown();
   renderCategories();
   updateSubjectProgress();
   renderMap();
-  renderNotes();
+  renderPractices();
+  renderExams();
   renderStats();
   renderAchievementsV2();
   renderSessions();

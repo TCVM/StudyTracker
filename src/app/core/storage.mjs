@@ -55,6 +55,10 @@ export function createSubject(id, name, icon, color) {
     color,
     categories: [],
     notes: { items: [], activeId: null, links: [] },
+    exams: [],
+    practices: [],
+    upcomingExams: [],
+    nextExamAt: null,
     meta: {
       difficulty: 'normal',
       pomodoro: { mode: 'off', workSeconds: 25 * 60, breakSeconds: 5 * 60 },
@@ -92,6 +96,7 @@ export function createSubjectFromInitialData() {
       level: topic.level ?? 1,
       completed: false,
       completedAt: null,
+      completionXp: null,
       reviews: []
     }))
   }));
@@ -139,44 +144,99 @@ export function normalizeLoadedState(loaded) {
   }
 
   if (merged.subjects.length > 0) {
-    merged.subjects = merged.subjects.map((subject) => ({
-      ...createSubject(subject.id || Date.now(), subject.name || 'Materia', subject.icon || '📚', subject.color || '#667eea'),
-      ...subject,
-      categories: (subject.categories || []).map((category) => ({
-        ...category,
-        topics: (category.topics || []).map((t) => ({
-          name: t.name,
-          level: t.level ?? 1,
-          completed: !!t.completed,
-          completedAt: t.completedAt ?? (t.completed ? Date.now() : null),
-          reviews: Array.isArray(t.reviews) ? t.reviews : []
-        }))
-      })),
-      meta: {
-        ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta,
-        ...(subject.meta || {}),
-        timer: {
-          ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta.timer,
-          ...((subject.meta && subject.meta.timer) ? subject.meta.timer : {}),
-          running: false,
-          lastTickMs: null
-        }
+    merged.subjects = merged.subjects.map((subject) => {
+      const baseSubject = createSubject(
+        subject.id || Date.now(),
+        subject.name || 'Materia',
+        subject.icon || '📚',
+        subject.color || '#667eea'
+      );
+
+      const upcomingRaw = Array.isArray(subject.upcomingExams) ? subject.upcomingExams : [];
+      const upcomingExams = upcomingRaw
+        .filter((x) => x && typeof x === 'object')
+        .map((x, idx) => {
+          const at = Number(x.at ?? x.date ?? x.ts);
+          const id = String(x.id ?? `up_${subject.id ?? Date.now()}_${idx}_${at}`);
+          const title = String(x.title ?? '').trim();
+          return { id, title, at };
+        })
+        .filter((x) => Number.isFinite(x.at));
+
+      // Migrate legacy single nextExamAt into upcomingExams if needed.
+      const legacyAt = Number(subject.nextExamAt);
+      if (!upcomingExams.length && Number.isFinite(legacyAt) && legacyAt) {
+        upcomingExams.push({ id: `nx_${subject.id ?? Date.now()}_${legacyAt}`, title: '', at: legacyAt });
       }
-    }));
+
+      upcomingExams.sort((a, b) => a.at - b.at);
+
+      const now = Date.now();
+      const nextUpcoming = upcomingExams.find((x) => x.at > now) ?? null;
+
+      return {
+        ...baseSubject,
+        exams: Array.isArray(subject.exams) ? subject.exams : [],
+        practices: Array.isArray(subject.practices) ? subject.practices : [],
+        ...subject,
+        upcomingExams,
+        // keep nextExamAt for backwards-compat UI; derived from upcomingExams
+        nextExamAt: nextUpcoming ? nextUpcoming.at : null,
+        categories: (subject.categories || []).map((category) => ({
+          ...category,
+          topics: (category.topics || []).map((t) => ({
+            name: t.name,
+            level: t.level ?? 1,
+            completed: !!t.completed,
+            completedAt: t.completedAt ?? (t.completed ? Date.now() : null),
+            completionXp: Number(t.completionXp) || null,
+            reviews: Array.isArray(t.reviews) ? t.reviews : [],
+            note: (t && typeof t === 'object' && t.note && typeof t.note === 'object') ? {
+              text: typeof t.note.text === 'string' ? t.note.text : '',
+              images: Array.isArray(t.note.images) ? t.note.images.map(String).filter(Boolean) : []
+            } : undefined
+          }))
+        })),
+        meta: {
+          ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta,
+          ...(subject.meta || {}),
+          timer: {
+            ...createSubject(subject.id, subject.name, subject.icon, subject.color).meta.timer,
+            ...((subject.meta && subject.meta.timer) ? subject.meta.timer : {}),
+            running: false,
+            lastTickMs: null
+          }
+        }
+      };
+    });
   }
 
   return merged;
 }
 
 let lastSaveMs = 0;
+let quotaWarnedAtMs = 0;
 
 export function saveData(force = false) {
   const now = Date.now();
   if (!force && now - lastSaveMs < 1500) return;
   lastSaveMs = now;
   try {
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(getAppState()));
+    const state = getAppState();
+    if (!state || typeof state !== 'object' || !Array.isArray(state.subjects)) return;
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
   } catch (e) {
+    const name = String(e?.name ?? '');
+    const msg = String(e?.message ?? '');
+    const isQuota = name === 'QuotaExceededError' || msg.toLowerCase().includes('quota');
+    if (isQuota) {
+      // Avoid spamming the UI if autosave keeps retrying.
+      if (now - quotaWarnedAtMs > 12_000) {
+        quotaWarnedAtMs = now;
+        showNotification('Almacenamiento lleno. Borrá imágenes/adjuntos grandes o exportá un backup.');
+      }
+      return;
+    }
     console.error('Error al guardar progreso:', e);
   }
 }

@@ -1,7 +1,8 @@
 import { getAppState, getCurrentSubject, setCurrentSubject } from '../core/state.mjs';
 import { applyTheme, showNotification } from '../../utils/helpers.js';
 import { completeTopicReview, toggleTopicCompleted } from '../features/topics/actions.mjs';
-import { setActiveView } from './flow.mjs';
+import { addExamCategory, addExamItem, toggleExamCompleted, attachExamFile, addExamQuestion, deleteExamQuestion, renderExams } from '../features/exams/exams.mjs';
+import { registerViewActivationHandler, setActiveView } from './flow.mjs';
 import { setMapViewMode } from '../features/subject/view.mjs';
 import {
   setAlarmMode,
@@ -12,15 +13,20 @@ import {
   startOrPauseTimer,
   stopTimer
 } from '../features/timer/timer.mjs';
-import { addNewNote, deleteActiveNote, ensureSubjectNotes, getActiveNote, normalizeHttpUrl, renameActiveNote, renderGlobalSkillTree, renderNotes } from '../features/notes/notes-skilltree-stats.mjs';
+import { renderGlobalSkillTree } from '../features/notes/notes-skilltree-stats.mjs';
 import { exportBackupToFile, importBackupText, resetData, saveData } from '../core/storage.mjs';
 import { checkSubjectAchievementsV2 } from '../features/achievements/core.mjs';
 import { ensureHomeStatsPanelV2, renderAchievementsV2, renderHomeStatsV2 } from '../features/achievements/ui.mjs';
-import { getSubjectLastActivity, renderHomePage } from './home.mjs';
+import { getSubjectLastActivity, renderHomePage, renderHomeUpcomingExams } from './home.mjs';
 import { renderAll, selectSubject } from './render.mjs';
 import { shareCurrentSubjectToShared, exportCurrentSubjectTemplate } from '../shared/actions.mjs';
-import { renderSharedSubjects } from '../shared/ui.mjs';
+import { renderSharedSubjects, showExamDateModal, hideExamDateModal, updateExamDatePreview, renderExamCountdown } from '../shared/ui.mjs';
 import { setIsDarkMode } from '../core/ui-state.mjs';
+import { addPractice, addExercise, toggleExerciseDone, renderPractices } from '../features/practices/practices.mjs';
+import { openTopicNoteModal, setupTopicNoteModal } from '../features/topic-notes/topic-notes.mjs';
+import { deletePracticeAnswer, openPracticeAnswerModal, setupPracticeAnswerModal } from '../features/practices/answers-modal.mjs';
+import { setupImageViewer } from './image-viewer.mjs';
+import { deleteExamAnswer, openExamAnswerModal, setupExamAnswerModal } from '../features/exams/answers-modal.mjs';
 import {
   addSubject,
   applyImportedSubjectToDraft,
@@ -45,8 +51,6 @@ import {
 } from '../features/subject/edit-modal.mjs';
 import { createDraftCategory } from '../features/subject/drafts.mjs';
 
-let notesSaveTimeoutId = null;
-
 function byId(id) {
   return document.getElementById(id);
 }
@@ -65,23 +69,54 @@ export function setupEventListeners() {
   const categoriesContainer = byId('categoriesContainer');
   if (categoriesContainer) {
     categoriesContainer.addEventListener('click', (e) => {
-      const reviewBtn = e.target?.closest?.('button[data-action="review"]');
+      const target = (e.target instanceof Element) ? e.target : e.target?.parentElement;
+      if (!target) return;
+
+      const reviewBtn = target.closest?.('button[data-action="review"]');
       if (reviewBtn) {
         const topicItem = reviewBtn.closest('.topic-item');
         if (!topicItem) return;
-        const categoryId = parseInt(topicItem.dataset.categoryId, 10);
-        const topicIndex = parseInt(topicItem.dataset.topicIndex, 10);
+        const categoryId = Number(topicItem.dataset.categoryId);
+        const topicIndex = Number(topicItem.dataset.topicIndex);
+        if (!Number.isFinite(categoryId) || !Number.isFinite(topicIndex)) return;
         completeTopicReview(categoryId, topicIndex);
         return;
       }
 
-      const topicItem = e.target?.closest?.('.topic-item');
+      const noteBtn = target.closest?.('.topic-note-btn');
+      if (noteBtn) {
+        const categoryId = Number(noteBtn.dataset.categoryId);
+        const topicIndex = Number(noteBtn.dataset.topicIndex);
+        if (!Number.isFinite(categoryId) || !Number.isFinite(topicIndex)) return;
+        openTopicNoteModal(categoryId, topicIndex);
+        return;
+      }
+
+      const topicItem = target.closest?.('.topic-item');
       if (!topicItem) return;
-      const categoryId = parseInt(topicItem.dataset.categoryId, 10);
-      const topicIndex = parseInt(topicItem.dataset.topicIndex, 10);
+      const categoryId = Number(topicItem.dataset.categoryId);
+      const topicIndex = Number(topicItem.dataset.topicIndex);
+      if (!Number.isFinite(categoryId) || !Number.isFinite(topicIndex)) return;
       toggleTopicCompleted(categoryId, topicIndex);
     });
   }
+
+  // Notes buttons: capture-phase handler to avoid missed clicks (e.g. emoji text nodes inside buttons)
+  document.addEventListener('click', (e) => {
+    const target = (e.target instanceof Element) ? e.target : e.target?.parentElement;
+    if (!target) return;
+
+    const noteBtn = target.closest?.('.topic-note-btn');
+    if (!noteBtn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const categoryId = Number(noteBtn.dataset.categoryId);
+    const topicIndex = Number(noteBtn.dataset.topicIndex);
+    if (!Number.isFinite(categoryId) || !Number.isFinite(topicIndex)) return;
+    openTopicNoteModal(categoryId, topicIndex);
+  }, true);
 
   const timerToggleBtn = byId('timerToggleBtn');
   if (timerToggleBtn) timerToggleBtn.addEventListener('click', () => startOrPauseTimer());
@@ -147,130 +182,294 @@ export function setupEventListeners() {
     btn.addEventListener('click', () => setActiveView(btn.dataset.view));
   });
 
+  // View activation hooks: keep navigation resilient by rendering on entry.
+  registerViewActivationHandler('examsView', () => {
+    renderExamCountdown();
+    renderExams();
+  });
+  registerViewActivationHandler('practicesView', () => {
+    renderPractices();
+  });
+
   const mapViewGridBtn = byId('mapViewGridBtn');
   if (mapViewGridBtn) mapViewGridBtn.addEventListener('click', () => setMapViewMode('grid'));
   const mapViewMindmapBtn = byId('mapViewMindmapBtn');
   if (mapViewMindmapBtn) mapViewMindmapBtn.addEventListener('click', () => setMapViewMode('mindmap'));
 
-  const subjectNotesText = byId('subjectNotesText');
-  if (subjectNotesText) {
-    subjectNotesText.addEventListener('input', () => {
-      const subject = getCurrentSubject();
-      if (!subject) return;
-      ensureSubjectNotes(subject);
-      const note = getActiveNote(subject);
-      if (note) {
-        note.content = String(subjectNotesText.value ?? '');
-        note.updatedAt = Date.now();
-        subject.notes.text = note.content;
-      }
+  // exams view interactions
+  const examsContainer = byId('examsContainer');
+  if (examsContainer) {
+    examsContainer.addEventListener('click', (e) => {
+      const target = (e.target instanceof Element) ? e.target : e.target?.parentElement;
+      if (!target) return;
 
-      if (notesSaveTimeoutId) clearTimeout(notesSaveTimeoutId);
-      notesSaveTimeoutId = setTimeout(() => {
-        notesSaveTimeoutId = null;
-        saveData(true);
-      }, 400);
-    });
-
-    subjectNotesText.addEventListener('blur', () => {
-      const subject = getCurrentSubject();
-      if (!subject) return;
-      ensureSubjectNotes(subject);
-      const note = getActiveNote(subject);
-      if (note) {
-        note.content = String(subjectNotesText.value ?? '');
-        note.updatedAt = Date.now();
-        subject.notes.text = note.content;
+      const addCat = target.closest?.('.exam-add-item');
+      if (addCat) {
+        const catDiv = addCat.closest('.exam-category');
+        const catIndex = parseInt(catDiv?.dataset?.categoryIndex || 0, 10);
+        void addExamItem(catIndex);
+        return;
       }
-      if (notesSaveTimeoutId) {
-        clearTimeout(notesSaveTimeoutId);
-        notesSaveTimeoutId = null;
+      const attachBtn = target.closest?.('.exam-attach-btn');
+      if (attachBtn) {
+        const catIndex = parseInt(attachBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(attachBtn.dataset.itemIndex || 0, 10);
+        if (examFileInput) {
+          examFileInput.dataset.categoryIndex = catIndex;
+          examFileInput.dataset.itemIndex = itemIndex;
+          examFileInput.click();
+        }
+        return;
       }
-      saveData(true);
+      const addQBtn = target.closest?.('.exam-question-add-btn');
+      if (addQBtn) {
+        const catIndex = parseInt(addQBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(addQBtn.dataset.itemIndex || 0, 10);
+        void addExamQuestion(catIndex, itemIndex);
+        return;
+      }
+      const delQBtn = target.closest?.('.exam-question-del-btn');
+      if (delQBtn) {
+        const catIndex = parseInt(delQBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(delQBtn.dataset.itemIndex || 0, 10);
+        const qId = String(delQBtn.dataset.questionId || '');
+        void deleteExamQuestion(catIndex, itemIndex, qId);
+        return;
+      }
+      const addAnsBtn = target.closest?.('.exam-answer-add-btn');
+      if (addAnsBtn) {
+        const catIndex = parseInt(addAnsBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(addAnsBtn.dataset.itemIndex || 0, 10);
+        const qId = String(addAnsBtn.dataset.questionId || '');
+        void openExamAnswerModal(catIndex, itemIndex, qId, null);
+        return;
+      }
+      const editAnsBtn = target.closest?.('.exam-answer-edit-btn');
+      if (editAnsBtn) {
+        const catIndex = parseInt(editAnsBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(editAnsBtn.dataset.itemIndex || 0, 10);
+        const qId = String(editAnsBtn.dataset.questionId || '');
+        const ansId = String(editAnsBtn.dataset.answerId || '');
+        void openExamAnswerModal(catIndex, itemIndex, qId, ansId);
+        return;
+      }
+      const delAnsBtn = target.closest?.('.exam-answer-del-btn');
+      if (delAnsBtn) {
+        const catIndex = parseInt(delAnsBtn.dataset.categoryIndex || 0, 10);
+        const itemIndex = parseInt(delAnsBtn.dataset.itemIndex || 0, 10);
+        const qId = String(delAnsBtn.dataset.questionId || '');
+        const ansId = String(delAnsBtn.dataset.answerId || '');
+        void deleteExamAnswer(catIndex, itemIndex, qId, ansId);
+        return;
+      }
+      const checkbox = target.closest?.('.exam-checkbox');
+      if (checkbox) {
+        const li = checkbox.closest('.exam-item');
+        const catDiv = checkbox.closest('.exam-category');
+        if (!li || !catDiv) return;
+        const catIndex = parseInt(catDiv.dataset.categoryIndex, 10);
+        const itemIndex = parseInt(li.dataset.itemIndex, 10);
+        toggleExamCompleted(catIndex, itemIndex);
+        return;
+      }
     });
   }
 
-  const subjectNotesSelect = byId('subjectNotesSelect');
-  if (subjectNotesSelect) {
-    subjectNotesSelect.addEventListener('change', () => {
-      const subject = getCurrentSubject();
-      if (!subject) return;
-      ensureSubjectNotes(subject);
+  const addExamCatBtn = byId('addExamCategoryBtn');
+  if (addExamCatBtn) addExamCatBtn.addEventListener('click', () => void addExamCategory());
 
-      const prevId = String(subjectNotesText?.dataset?.noteId ?? '');
-      const prev = subject.notes.items.find((n) => n.id === prevId);
-      if (prev && subjectNotesText) {
-        prev.content = String(subjectNotesText.value ?? '');
-        prev.updatedAt = Date.now();
+  // countdown refresh timer
+  if (typeof renderExamCountdown === 'function') {
+    setInterval(() => {
+      try {
+        renderExamCountdown();
+        renderHomeUpcomingExams();
+      } catch (e) {
+        // ignore
       }
+    }, 1000);
+  }
 
-      subject.notes.activeId = String(subjectNotesSelect.value ?? '');
-      const active = getActiveNote(subject);
-      subject.notes.text = String(active?.content ?? '');
-
-      saveData(true);
-      renderNotes();
+  const examFileInput = byId('examFileInput');
+  if (examFileInput) {
+    examFileInput.addEventListener('change', () => {
+      const file = examFileInput.files && examFileInput.files[0];
+      if (!file) return;
+      const catIndex = parseInt(examFileInput.dataset.categoryIndex || 0, 10);
+      const itemIndex = parseInt(examFileInput.dataset.itemIndex || 0, 10);
+      attachExamFile(catIndex, itemIndex, file);
+      examFileInput.value = '';
     });
   }
 
-  const subjectAddNoteBtn = byId('subjectAddNoteBtn');
-  if (subjectAddNoteBtn) subjectAddNoteBtn.addEventListener('click', () => addNewNote());
-  const subjectRenameNoteBtn = byId('subjectRenameNoteBtn');
-  if (subjectRenameNoteBtn) subjectRenameNoteBtn.addEventListener('click', () => renameActiveNote());
-  const subjectDeleteNoteBtn = byId('subjectDeleteNoteBtn');
-  if (subjectDeleteNoteBtn) subjectDeleteNoteBtn.addEventListener('click', () => deleteActiveNote());
-
-  const subjectAddLinkBtn = byId('subjectAddLinkBtn');
-  const subjectLinkTitle = byId('subjectLinkTitle');
-  const subjectLinkUrl = byId('subjectLinkUrl');
-  if (subjectAddLinkBtn) {
-    subjectAddLinkBtn.addEventListener('click', () => {
-      const subject = getCurrentSubject();
-      if (!subject) {
-        showNotification('Selecciona una materia primero');
+  // practices view interactions
+  const practicesContainer = byId('practicesContainer');
+  if (practicesContainer) {
+    practicesContainer.addEventListener('click', (e) => {
+      const addAnsBtn = e.target.closest?.('.practice-answer-add-btn');
+      if (addAnsBtn) {
+        const practiceIndex = parseInt(addAnsBtn.dataset.practiceIndex || 0, 10);
+        const exerciseIndex = parseInt(addAnsBtn.dataset.exerciseIndex || 0, 10);
+        void openPracticeAnswerModal(practiceIndex, exerciseIndex, null);
+        return;
+      }
+      const editAnsBtn = e.target.closest?.('.practice-answer-edit-btn');
+      if (editAnsBtn) {
+        const practiceIndex = parseInt(editAnsBtn.dataset.practiceIndex || 0, 10);
+        const exerciseIndex = parseInt(editAnsBtn.dataset.exerciseIndex || 0, 10);
+        const answerId = String(editAnsBtn.dataset.answerId || '');
+        void openPracticeAnswerModal(practiceIndex, exerciseIndex, answerId);
+        return;
+      }
+      const delAnsBtn = e.target.closest?.('.practice-answer-del-btn');
+      if (delAnsBtn) {
+        const practiceIndex = parseInt(delAnsBtn.dataset.practiceIndex || 0, 10);
+        const exerciseIndex = parseInt(delAnsBtn.dataset.exerciseIndex || 0, 10);
+        const answerId = String(delAnsBtn.dataset.answerId || '');
+        void deletePracticeAnswer(practiceIndex, exerciseIndex, answerId);
         return;
       }
 
-      const url = normalizeHttpUrl(subjectLinkUrl ? subjectLinkUrl.value : '');
-      if (!url) {
-        showNotification('URL inválida (usa http/https)');
+      const addBtn = e.target.closest?.('.practice-add-exercise');
+      if (addBtn) {
+        const practiceIndex = parseInt(addBtn.dataset.practiceIndex || 0, 10);
+        void addExercise(practiceIndex);
         return;
       }
 
-      const title = String(subjectLinkTitle ? subjectLinkTitle.value : '').trim();
-      ensureSubjectNotes(subject);
-      subject.notes.links.unshift({ title, url });
-
-      if (subjectLinkTitle) subjectLinkTitle.value = '';
-      if (subjectLinkUrl) subjectLinkUrl.value = '';
-
-      saveData(true);
-      renderNotes();
+      const checkbox = e.target.closest?.('.practice-checkbox');
+      if (checkbox) {
+        const practiceIndex = parseInt(checkbox.dataset.practiceIndex || 0, 10);
+        const exerciseIndex = parseInt(checkbox.dataset.exerciseIndex || 0, 10);
+        toggleExerciseDone(practiceIndex, exerciseIndex);
+      }
     });
   }
 
-  const subjectLinksList = byId('subjectLinksList');
-  if (subjectLinksList) {
-    subjectLinksList.addEventListener('click', (e) => {
-      const btn = e.target?.closest?.('button[data-link-index]') ?? null;
-      if (!btn || !btn.dataset || btn.dataset.linkIndex == null) return;
-      const subject = getCurrentSubject();
-      if (!subject) return;
+  const addPracticeBtn = byId('addPracticeBtn');
+  if (addPracticeBtn) addPracticeBtn.addEventListener('click', () => void addPractice());
 
-      const idx = Number(btn.dataset.linkIndex);
-      if (!Number.isFinite(idx)) return;
-
-      ensureSubjectNotes(subject);
-      if (!Array.isArray(subject.notes.links)) subject.notes.links = [];
-      if (idx < 0 || idx >= subject.notes.links.length) return;
-
-      subject.notes.links.splice(idx, 1);
-      saveData(true);
-      renderNotes();
-    });
-  }
+  setupTopicNoteModal();
+  setupPracticeAnswerModal();
+  setupImageViewer();
+  setupExamAnswerModal();
 
   addEventListener('beforeunload', () => saveData(true));
+
+  // Modal para fecha de examen
+  const setExamDateBtn = byId("setExamDateBtn");
+  if (setExamDateBtn) setExamDateBtn.addEventListener("click", () => showExamDateModal());
+
+  const closeExamDateModal = byId("closeExamDateModal");
+  if (closeExamDateModal) closeExamDateModal.addEventListener("click", () => hideExamDateModal());
+
+  const cancelExamDateBtn = byId("cancelExamDateBtn");
+  if (cancelExamDateBtn) cancelExamDateBtn.addEventListener("click", () => hideExamDateModal());
+
+  const examTitleInput = byId("examTitleInput");
+  const examDateTimeInput = byId("examDateTimeInput");
+  if (examTitleInput) examTitleInput.addEventListener("input", updateExamDatePreview);
+  if (examDateTimeInput) examDateTimeInput.addEventListener("change", updateExamDatePreview);
+
+  const clearExamDateBtn = byId("clearExamDateBtn");
+  if (clearExamDateBtn) {
+    clearExamDateBtn.addEventListener("click", () => {
+      if (examTitleInput) examTitleInput.value = "";
+      if (examDateTimeInput) examDateTimeInput.value = "";
+      updateExamDatePreview();
+    });
+  }
+
+  const confirmExamDateBtn = byId("confirmExamDateBtn");
+  if (confirmExamDateBtn) {
+    confirmExamDateBtn.addEventListener("click", () => {
+      const subject = getCurrentSubject();
+      if (!subject) return;
+
+      const raw = String(examDateTimeInput?.value ?? "").trim();
+      if (!raw) {
+        showNotification("Selecciona fecha y hora");
+        return;
+      }
+
+      const parts = raw.split("T");
+      if (parts.length !== 2) {
+        showNotification("Fecha u hora inválida");
+        return;
+      }
+      const [y, m, d] = parts[0].split("-").map((n) => Number(n));
+      const [hh, mm] = parts[1].split(":").map((n) => Number(n));
+      if (![y, m, d, hh, mm].every((n) => Number.isFinite(n))) {
+        showNotification("Fecha u hora inválida");
+        return;
+      }
+      const dateObj = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+      const ts = dateObj.getTime();
+      if (!Number.isFinite(ts)) {
+        showNotification("Fecha u hora inválida");
+        return;
+      }
+
+      if (!Array.isArray(subject.upcomingExams)) subject.upcomingExams = [];
+
+      const modal = byId("examDateModal");
+      const editingId = String(modal?.dataset?.examId ?? "").trim();
+      const title = String(examTitleInput?.value ?? "").trim();
+
+      if (editingId) {
+        const found = subject.upcomingExams.find((x) => String(x?.id) === editingId);
+        if (found) {
+          found.title = title;
+          found.at = ts;
+        }
+      } else {
+        const id = `up_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        subject.upcomingExams.push({ id, title, at: ts });
+      }
+
+      saveData(true);
+      hideExamDateModal();
+      renderAll();
+    });
+  }
+
+  // Próximos exámenes: editar / eliminar
+  const upcomingExamsList = byId("upcomingExamsList");
+  if (upcomingExamsList) {
+    upcomingExamsList.addEventListener("click", (e) => {
+      const btn = (e.target instanceof Element) ? e.target.closest("button[data-action]") : null;
+      const action = btn?.dataset?.action;
+      const examId = String(btn?.dataset?.examId ?? "").trim();
+      if (!action || !examId) return;
+
+      const subject = getCurrentSubject();
+      if (!subject) return;
+      if (!Array.isArray(subject.upcomingExams)) subject.upcomingExams = [];
+
+      if (action === "upcoming_edit") {
+        showExamDateModal(examId);
+        return;
+      }
+
+      if (action === "upcoming_delete") {
+        subject.upcomingExams = subject.upcomingExams.filter((x) => String(x?.id) !== examId);
+        saveData(true);
+        renderAll();
+      }
+    });
+  }
+
+  // Cerrar modal clickeando afuera / Escape
+  const examDateModal = byId("examDateModal");
+  if (examDateModal) {
+    examDateModal.addEventListener("click", (e) => {
+      if (e.target === examDateModal) hideExamDateModal();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (examDateModal.classList.contains("active")) hideExamDateModal();
+    });
+  }
 
   const addSubjectBtn = byId('addSubjectBtn');
   if (addSubjectBtn) addSubjectBtn.addEventListener('click', () => showAddSubjectModal());
@@ -343,19 +542,17 @@ export function setupEventListeners() {
       }
 
       try {
-        if (subjectImportStatus) subjectImportStatus.textContent = 'Importandoâ€¦';
+        if (subjectImportStatus) subjectImportStatus.textContent = 'Importando…';
         const payload = JSON.parse(raw);
         applyImportedSubjectToDraft(payload);
         setAddSubjectModalTab('manual');
         if (subjectImportStatus) {
-          subjectImportStatus.textContent =
-            'ImportaciÃ³n lista. RevisÃ¡ y tocÃ¡ â€œCrearâ€.';
+          subjectImportStatus.textContent = 'Importación lista. Revisá y tocá “Crear”.';
         }
       } catch (err) {
         console.error(err);
         if (subjectImportStatus) {
-          subjectImportStatus.textContent =
-            'No se pudo importar: JSON invÃ¡lido o estructura no soportada.';
+          subjectImportStatus.textContent = 'No se pudo importar: JSON inválido o estructura no soportada.';
         }
       }
     });

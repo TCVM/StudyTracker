@@ -3,6 +3,7 @@ import { escapeHtml, prettyTime, showNotification, todayKey } from '../../../uti
 import { getAppState, getCurrentSubject } from '../../core/state.mjs';
 import { SKILLS } from '../../core/constants.mjs';
 import { saveData } from '../../core/storage.mjs';
+import { setActiveView } from '../../ui/flow.mjs';
 import { isTopicReviewDue } from '../xp/xp.mjs';
 import { updateXpUi } from '../timer/timer.mjs';
 
@@ -204,6 +205,56 @@ export function addNewNote() {
   } catch {
     // ignore
   }
+}
+
+// open or create a note tied to a specific topic
+export function openNoteForTopic(categoryId, topicIndex) {
+  const subject = getCurrentSubject();
+  if (!subject) return;
+  ensureSubjectNotes(subject);
+
+  const category = subject.categories.find((c) => String(c?.id) === String(categoryId));
+  if (!category) return;
+  const topic = category.topics[topicIndex];
+  if (!topic) return;
+  const title = `Tema: ${category.name} / ${topic.name}`;
+  const id = `topic_${categoryId}_${topicIndex}`;
+
+  let note = subject.notes.items.find((n) => n.id === id);
+  if (!note) {
+    const now = Date.now();
+    note = { id, title, content: '', createdAt: now, updatedAt: now };
+    subject.notes.items.unshift(note);
+  }
+  subject.notes.activeId = id;
+  subject.notes.text = note.content || '';
+  saveData(true);
+  renderNotes();
+  setActiveView('notesView');
+}
+
+// open or create a note tied to a category
+export function openNoteForCategory(categoryId) {
+  const subject = getCurrentSubject();
+  if (!subject) return;
+  ensureSubjectNotes(subject);
+
+  const category = subject.categories.find((c) => String(c?.id) === String(categoryId));
+  if (!category) return;
+  const title = `Categoría: ${category.name}`;
+  const id = `category_${categoryId}`;
+
+  let note = subject.notes.items.find((n) => n.id === id);
+  if (!note) {
+    const now = Date.now();
+    note = { id, title, content: '', createdAt: now, updatedAt: now };
+    subject.notes.items.unshift(note);
+  }
+  subject.notes.activeId = id;
+  subject.notes.text = note.content || '';
+  saveData(true);
+  renderNotes();
+  setActiveView('notesView');
 }
 
 export function renameActiveNote() {
