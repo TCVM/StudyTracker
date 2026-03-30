@@ -54,13 +54,12 @@ import {
 } from '../features/subject/edit-modal.mjs';
 import { createDraftCategory } from '../features/subject/drafts.mjs';
 import {
-  downloadEncryptedBackupFromGitHubGist,
-  finishGitHubDeviceFlow,
-  getGitHubGistSyncConfig,
-  setGitHubGistSyncConfig,
-  startGitHubDeviceFlow,
-  uploadEncryptedBackupToGitHubGist
-} from '../sync/github-sync.mjs';
+  buildCloudAuthStartUrl,
+  cloudDownloadEncryptedBackup,
+  cloudUploadEncryptedBackup,
+  getCloudSyncConfig,
+  setCloudSyncConfig
+} from '../sync/cloud-sync.mjs';
 
 function byId(id) {
   return document.getElementById(id);
@@ -111,73 +110,44 @@ function setupMobileNav() {
   });
 }
 
-async function ensureGitHubGistSyncAuthorized() {
-  const current = getGitHubGistSyncConfig();
-  if (current.token) return current;
+async function ensureCloudSyncAuthorized() {
+  const current = getCloudSyncConfig();
 
-  let cid = String(current.clientId ?? '').trim();
-  if (!cid) {
-    const clientId = await showPromptModal({
-      title: 'Sincronización (GitHub)',
-      label: 'GitHub OAuth Client ID',
-      placeholder: 'Iv1....',
-      hint: 'Lo define el dueño de la app (OAuth App en GitHub). Se guarda en este dispositivo.'
+  let baseUrl = String(current.baseUrl ?? '').trim();
+  if (!baseUrl) {
+    const entered = await showPromptModal({
+      title: 'Sincronización (Cloud)',
+      label: 'URL del servidor de Sync',
+      placeholder: 'https://studytracker-sync.<tu-subdominio>.workers.dev',
+      hint: 'Es el backend (Cloudflare Worker) que deployás. Se guarda solo en este dispositivo.'
     });
 
-    if (clientId == null) return null;
-    cid = String(clientId).trim();
-    if (!cid) {
-      showNotification('Client ID vacío.');
+    if (entered == null) return null;
+    baseUrl = String(entered).trim();
+    if (!baseUrl) {
+      showNotification('URL vacía.');
       return null;
     }
+
+    setCloudSyncConfig({ baseUrl });
   }
 
-  let device;
-  try {
-    device = await startGitHubDeviceFlow({ clientId: cid, scope: 'gist' });
-  } catch (e) {
-    showNotification(String(e?.message ?? e ?? 'No se pudo iniciar la conexión.'));
-    return null;
-  }
+  const updated = getCloudSyncConfig();
+  if (String(updated.sessionToken ?? '').trim()) return updated;
 
-  try {
-    await navigator.clipboard?.writeText?.(device.userCode);
-  } catch {
-    // ignore
-  }
-
+  const loginUrl = buildCloudAuthStartUrl({ baseUrl, redirectUrl: window.location.href });
   const ok = await showConfirmModalV2({
     title: 'Conectar con GitHub',
-    text: `Abrí ${device.verificationUri} e ingresá el código:\n\n${device.userCode}\n\n(Si se pudo, ya lo copié al portapapeles.)`,
-    confirmText: 'Abrir GitHub',
-    cancelText: 'Cerrar',
-    fallbackText: `Abrí ${device.verificationUri} e ingresá el código ${device.userCode}`
+    text: 'Vas a ser redirigido a GitHub para iniciar sesión y autorizar el Sync.',
+    confirmText: 'Continuar',
+    cancelText: 'Cancelar',
+    fallbackText: '¿Conectar con GitHub para Sync?'
   });
 
   if (!ok) return null;
 
-  try {
-    window.open(device.verificationUri, '_blank', 'noopener,noreferrer');
-  } catch {
-    // ignore
-  }
-
-  showNotification('Esperando autorización de GitHub…');
-
-  try {
-    await finishGitHubDeviceFlow({
-      clientId: device.clientId,
-      deviceCode: device.deviceCode,
-      intervalSec: device.intervalSec,
-      expiresInSec: device.expiresInSec
-    });
-  } catch (e) {
-    showNotification(String(e?.message ?? e ?? 'No se pudo finalizar la conexión.'));
-    return null;
-  }
-
-  showNotification('Conectado a GitHub.');
-  return getGitHubGistSyncConfig();
+  window.location.assign(loginUrl);
+  return null;
 }
 
 async function promptPassphrase() {
@@ -197,27 +167,7 @@ async function promptPassphrase() {
   return p;
 }
 
-async function ensureGistIdConfigured() {
-  const cfg = getGitHubGistSyncConfig();
-  if (cfg.gistId) return cfg;
-
-  const gistId = await showPromptModal({
-    title: 'Sincronización (GitHub)',
-    label: 'Gist ID',
-    placeholder: 'Pegá el ID del Gist (se crea al subir)',
-    defaultValue: '',
-    hint: 'Si aún no tenés Gist, usá "Subir backup" primero.'
-  });
-
-  if (gistId == null) return null;
-  const gid = String(gistId).trim();
-  if (!gid) {
-    showNotification('Gist ID vacío.');
-    return null;
-  }
-
-  return setGitHubGistSyncConfig({ gistId: gid });
-}
+// (Cloud sync) no necesita Gist ID: el backend guarda 1 backup por usuario.
 
 export function setupEventListeners() {
   const resetBtn = byId('resetBtn');
@@ -912,18 +862,18 @@ export function setupEventListeners() {
   const quickGitHubSync = byId('quickGitHubSync');
   if (quickGitHubSync) {
     quickGitHubSync.addEventListener('click', async () => {
-      const cfg = getGitHubGistSyncConfig();
-      const status = `GitHub: ${cfg.token ? 'Conectado' : 'No conectado'} | Gist: ${cfg.gistId ? cfg.gistId : 'No (se crea al subir)'}`;
+      const cfg = getCloudSyncConfig();
+      const status = `Servidor: ${cfg.baseUrl ? 'OK' : 'Falta'} | GitHub: ${cfg.sessionToken ? 'Conectado' : 'No conectado'}`;
       const action = await showSyncModal({ status });
       if (!action) return;
 
       if (action === 'setup') {
-        await ensureGitHubGistSyncAuthorized();
+        await ensureCloudSyncAuthorized();
         return;
       }
 
       if (action === 'upload') {
-        const configured = await ensureGitHubGistSyncAuthorized();
+        const configured = await ensureCloudSyncAuthorized();
         if (!configured) return;
 
         const passphrase = await promptPassphrase();
@@ -931,7 +881,7 @@ export function setupEventListeners() {
 
         const ok = await showConfirmModalV2({
           title: 'Subir backup cifrado',
-          text: 'Esto sube un backup cifrado a GitHub (Gist). Si ya existe, lo reemplaza.',
+          text: 'Esto sube un backup cifrado a tu servidor de Sync. Si ya existe, lo reemplaza.',
           confirmText: 'Subir',
           cancelText: 'Cancelar',
           fallbackText: '¿Subir backup cifrado a GitHub?'
@@ -939,8 +889,8 @@ export function setupEventListeners() {
         if (!ok) return;
 
         try {
-          const res = await uploadEncryptedBackupToGitHubGist({ token: configured.token, passphrase });
-          showNotification(`Backup subido. Gist: ${res.gistId}`);
+          const res = await cloudUploadEncryptedBackup({ passphrase });
+          showNotification(`Backup subido (${res?.updatedAt ?? 'ok'}).`);
         } catch (e) {
           showNotification(String(e?.message ?? e ?? 'Error al subir.'));
         }
@@ -948,18 +898,15 @@ export function setupEventListeners() {
       }
 
       if (action === 'download') {
-        const configured = await ensureGitHubGistSyncAuthorized();
+        const configured = await ensureCloudSyncAuthorized();
         if (!configured) return;
-
-        const withGist = await ensureGistIdConfigured();
-        if (!withGist) return;
 
         const passphrase = await promptPassphrase();
         if (!passphrase) return;
 
         const ok = await showConfirmModalV2({
           title: 'Bajar backup cifrado',
-          text: 'Esto descarga y descifra el backup del Gist, y luego te pedirá confirmación para importar (reemplaza tu progreso actual).',
+          text: 'Esto descarga y descifra el backup del servidor, y luego te pedirá confirmación para importar (reemplaza tu progreso actual).',
           confirmText: 'Bajar',
           cancelText: 'Cancelar',
           fallbackText: '¿Bajar backup cifrado desde GitHub?'
@@ -967,8 +914,8 @@ export function setupEventListeners() {
         if (!ok) return;
 
         try {
-          const res = await downloadEncryptedBackupFromGitHubGist({ token: configured.token, gistId: withGist.gistId, passphrase });
-          showNotification(`Backup descargado. Gist: ${res.gistId}`);
+          const res = await cloudDownloadEncryptedBackup({ passphrase });
+          showNotification(`Backup descargado (${res?.updatedAt ?? 'ok'}).`);
         } catch (e) {
           showNotification(String(e?.message ?? e ?? 'Error al bajar.'));
         }

@@ -9,6 +9,7 @@ import { loadSharedSubjects } from './shared/core.mjs';
 import { renderAll } from './ui/render.mjs';
 import { setActiveView } from './ui/flow.mjs';
 import { setIsDarkMode } from './core/ui-state.mjs';
+import { claimCloudSyncTokenFromUrl } from './sync/cloud-sync.mjs';
 
 function openHomeView() {
   setCurrentSubject(null);
@@ -19,6 +20,7 @@ function openHomeView() {
 }
 
 function initApp() {
+  claimCloudSyncTokenFromUrl();
   loadData();
   checkAchievementsV2({ activity: 'generic', nowMs: Date.now(), silent: true });
   void loadSharedSubjects();

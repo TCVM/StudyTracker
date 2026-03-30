@@ -23,13 +23,23 @@ App web (sin backend) para llevar materias, temas, timer, prácticas y exámenes
 - Persistencia: `src/app/core/storage.mjs` (principalmente `localStorage`).
 - Imágenes/adjuntos: `src/app/core/idb.mjs` (IndexedDB) y módulos de thumbs/viewer.
 
-## Sync (GitHub Gist)
+## Sync (Cloud + GitHub login)
 
+- Requiere un backend liviano (gratis): Cloudflare Worker + KV.
 - En Home → `Sincronizar (GitHub)`.
-- `Conectar`: pegá el `Client ID` de un OAuth App y autorizá en `github.com/login/device` (se guarda solo en este dispositivo).
-- `Subir backup`: pide una contraseña (no se guarda) y crea/actualiza un Gist privado con el backup cifrado.
-- `Bajar backup`: pide el Gist ID (si falta) + la contraseña y luego importa el backup (reemplaza el progreso actual).
+- `Conectar`: te pide la URL del servidor (tu Worker) y te redirige a GitHub para iniciar sesión. Al volver, queda conectado en ese dispositivo.
+- `Subir`: sube tu backup cifrado al backend (1 backup por usuario).
+- `Bajar`: baja el backup cifrado del backend y luego lo importa (reemplaza tu progreso actual).
 - Nota: por ahora no sincroniza adjuntos/imágenes guardados en IndexedDB.
+
+### Backend (Cloudflare Worker)
+
+- Worker: `cloudflare-worker/studytracker-sync-worker.js`.
+- Crear un OAuth App en GitHub y configurar `Authorization callback URL` a `https://<TU_WORKER>/auth/github/callback`.
+- En Cloudflare (Worker settings / wrangler):
+  - KV binding: `SYNC_KV`
+  - Secrets: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `JWT_SECRET`
+  - (Opcional) `ALLOWED_ORIGINS` con tu URL de GitHub Pages
 
 ## Navegación (vistas)
 

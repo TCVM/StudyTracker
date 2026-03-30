@@ -59,7 +59,7 @@ export function showSyncModal(options = null) {
     modal.classList.remove('active');
   }
 
-  const title = options?.title ?? 'Sincronización (GitHub Gist)';
+  const title = options?.title ?? 'Sincronización (Cloud)';
   const status = options?.status ?? '';
 
   if (titleEl) titleEl.textContent = title;

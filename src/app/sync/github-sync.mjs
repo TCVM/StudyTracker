@@ -22,14 +22,15 @@ export function getGitHubGistSyncConfig() {
   const raw = localStorage.getItem(CONFIG_KEY);
   const parsed = raw ? safeJsonParse(raw) : null;
   if (!parsed || typeof parsed !== 'object') {
-    return { token: '', gistId: '', filename: DEFAULT_FILENAME, clientId: '' };
+    return { token: '', gistId: '', filename: DEFAULT_FILENAME, clientId: '', proxyBaseUrl: '' };
   }
 
   return {
     token: typeof parsed.token === 'string' ? parsed.token : '',
     gistId: typeof parsed.gistId === 'string' ? parsed.gistId : '',
     filename: typeof parsed.filename === 'string' && parsed.filename.trim() ? parsed.filename : DEFAULT_FILENAME,
-    clientId: typeof parsed.clientId === 'string' ? parsed.clientId : ''
+    clientId: typeof parsed.clientId === 'string' ? parsed.clientId : '',
+    proxyBaseUrl: typeof parsed.proxyBaseUrl === 'string' ? parsed.proxyBaseUrl : ''
   };
 }
 
@@ -44,7 +45,8 @@ export function setGitHubGistSyncConfig(next) {
     token: String(merged.token ?? ''),
     gistId: String(merged.gistId ?? ''),
     filename: String(merged.filename ?? DEFAULT_FILENAME),
-    clientId: String(merged.clientId ?? '')
+    clientId: String(merged.clientId ?? ''),
+    proxyBaseUrl: String(merged.proxyBaseUrl ?? '')
   }));
 
   return getGitHubGistSyncConfig();
@@ -102,7 +104,7 @@ export async function startGitHubDeviceFlow({ clientId, scope = 'gist' } = {}) {
   const cid = String(clientId ?? cfg.clientId ?? '').trim();
   if (!cid) throw new Error('Falta el Client ID del OAuth App.');
 
-  const device = await requestGitHubDeviceCode({ clientId: cid, scope });
+  const device = await requestGitHubDeviceCode({ clientId: cid, scope, proxyBaseUrl: cfg.proxyBaseUrl });
   setGitHubGistSyncConfig({ clientId: cid });
   return { ...device, clientId: cid };
 }
@@ -116,7 +118,8 @@ export async function finishGitHubDeviceFlow({ clientId, deviceCode, intervalSec
     clientId: cid,
     deviceCode,
     intervalSec,
-    expiresInSec
+    expiresInSec,
+    proxyBaseUrl: cfg.proxyBaseUrl
   });
 
   setGitHubGistSyncConfig({ token: token.accessToken, clientId: cid });

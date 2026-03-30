@@ -23,14 +23,37 @@ async function postFormJson(url, form) {
   return res.json();
 }
 
-export async function requestGitHubDeviceCode({ clientId, scope = 'gist' }) {
+function resolveEndpoints(proxyBaseUrl) {
+  const base = String(proxyBaseUrl ?? '').trim().replace(/\/+$/, '');
+  if (!base) return { deviceCodeUrl: DEVICE_CODE_ENDPOINT, tokenUrl: TOKEN_ENDPOINT };
+  return {
+    deviceCodeUrl: `${base}/device/code`,
+    tokenUrl: `${base}/oauth/access_token`
+  };
+}
+
+function wrapCorsError(e) {
+  const msg = String(e?.message ?? e ?? '');
+  if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('cors')) {
+    return new Error('GitHub bloquea CORS para este endpoint desde el navegador. Usá un proxy (ver README) o conectá con token manual.');
+  }
+  return e instanceof Error ? e : new Error(msg || 'Error de red.');
+}
+
+export async function requestGitHubDeviceCode({ clientId, scope = 'gist', proxyBaseUrl = '' }) {
   const cid = String(clientId ?? '').trim();
   if (!cid) throw new Error('Falta el Client ID del OAuth App.');
 
-  const json = await postFormJson(DEVICE_CODE_ENDPOINT, {
-    client_id: cid,
-    scope: String(scope ?? 'gist')
-  });
+  const { deviceCodeUrl } = resolveEndpoints(proxyBaseUrl);
+  let json;
+  try {
+    json = await postFormJson(deviceCodeUrl, {
+      client_id: cid,
+      scope: String(scope ?? 'gist')
+    });
+  } catch (e) {
+    throw wrapCorsError(e);
+  }
 
   const deviceCode = String(json?.device_code ?? '').trim();
   const userCode = String(json?.user_code ?? '').trim();
@@ -55,7 +78,8 @@ export async function pollGitHubDeviceAccessToken({
   clientId,
   deviceCode,
   intervalSec = 5,
-  expiresInSec = 900
+  expiresInSec = 900,
+  proxyBaseUrl = ''
 }) {
   const cid = String(clientId ?? '').trim();
   const dcode = String(deviceCode ?? '').trim();
@@ -64,15 +88,21 @@ export async function pollGitHubDeviceAccessToken({
 
   const deadlineMs = Date.now() + (Number(expiresInSec) || 900) * 1000;
   let intervalMs = (Number(intervalSec) || 5) * 1000;
+  const { tokenUrl } = resolveEndpoints(proxyBaseUrl);
 
   while (Date.now() < deadlineMs) {
     await sleep(intervalMs);
 
-    const json = await postFormJson(TOKEN_ENDPOINT, {
-      client_id: cid,
-      device_code: dcode,
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-    });
+    let json;
+    try {
+      json = await postFormJson(tokenUrl, {
+        client_id: cid,
+        device_code: dcode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      });
+    } catch (e) {
+      throw wrapCorsError(e);
+    }
 
     const accessToken = String(json?.access_token ?? '').trim();
     if (accessToken) {
@@ -106,4 +136,3 @@ export async function pollGitHubDeviceAccessToken({
 
   throw new Error('Tiempo agotado esperando autorización.');
 }
-
