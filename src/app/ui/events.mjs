@@ -135,7 +135,14 @@ async function ensureCloudSyncAuthorized() {
   const updated = getCloudSyncConfig();
   if (String(updated.sessionToken ?? '').trim()) return updated;
 
-  const loginUrl = buildCloudAuthStartUrl({ baseUrl, redirectUrl: window.location.href });
+  let loginUrl;
+  try {
+    loginUrl = buildCloudAuthStartUrl({ baseUrl: updated.baseUrl, redirectUrl: window.location.href });
+  } catch (e) {
+    showNotification(String(e?.message ?? e ?? 'URL inválida.'));
+    return null;
+  }
+
   const ok = await showConfirmModalV2({
     title: 'Conectar con GitHub',
     text: 'Vas a ser redirigido a GitHub para iniciar sesión y autorizar el Sync.',
@@ -146,6 +153,7 @@ async function ensureCloudSyncAuthorized() {
 
   if (!ok) return null;
 
+  showNotification('Redirigiendo a GitHub…');
   window.location.assign(loginUrl);
   return null;
 }

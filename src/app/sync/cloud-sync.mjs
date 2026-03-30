@@ -11,6 +11,13 @@ function safeJsonParse(text) {
   }
 }
 
+function normalizeBaseUrl(input) {
+  const raw = String(input ?? '').trim();
+  if (!raw) return '';
+  const withScheme = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`;
+  return withScheme.replace(/\/+$/, '');
+}
+
 export function getCloudSyncConfig() {
   const raw = localStorage.getItem(CONFIG_KEY);
   const parsed = raw ? safeJsonParse(raw) : null;
@@ -18,7 +25,7 @@ export function getCloudSyncConfig() {
     return { baseUrl: '', sessionToken: '' };
   }
   return {
-    baseUrl: typeof parsed.baseUrl === 'string' ? parsed.baseUrl : '',
+    baseUrl: typeof parsed.baseUrl === 'string' ? normalizeBaseUrl(parsed.baseUrl) : '',
     sessionToken: typeof parsed.sessionToken === 'string' ? parsed.sessionToken : ''
   };
 }
@@ -27,7 +34,7 @@ export function setCloudSyncConfig(next) {
   const current = getCloudSyncConfig();
   const merged = { ...current, ...(next && typeof next === 'object' ? next : {}) };
   localStorage.setItem(CONFIG_KEY, JSON.stringify({
-    baseUrl: String(merged.baseUrl ?? ''),
+    baseUrl: normalizeBaseUrl(merged.baseUrl),
     sessionToken: String(merged.sessionToken ?? '')
   }));
   return getCloudSyncConfig();
@@ -52,7 +59,7 @@ export function claimCloudSyncTokenFromUrl() {
 }
 
 export function buildCloudAuthStartUrl({ baseUrl, redirectUrl }) {
-  const base = String(baseUrl ?? '').trim().replace(/\/+$/, '');
+  const base = normalizeBaseUrl(baseUrl);
   if (!base) throw new Error('Falta la URL del servidor de sync.');
   const url = new URL('/auth/github/start', base);
   url.searchParams.set('redirect', String(redirectUrl ?? window.location.href));
@@ -60,7 +67,7 @@ export function buildCloudAuthStartUrl({ baseUrl, redirectUrl }) {
 }
 
 async function apiJson({ baseUrl, path, method, sessionToken, body }) {
-  const base = String(baseUrl ?? '').trim().replace(/\/+$/, '');
+  const base = normalizeBaseUrl(baseUrl);
   if (!base) throw new Error('Falta la URL del servidor de sync.');
   const url = `${base}${path}`;
 
@@ -124,4 +131,3 @@ export async function cloudDownloadEncryptedBackup({ passphrase }) {
   await importBackupText(plainText);
   return json;
 }
-
