@@ -162,3 +162,8 @@ body.dark-mode .level-info {
     margin-bottom: 20px;
 }
 
+/* Estadísticas globales (Home) */
+#homeStatsPanel #homeStatsDetails {
+    margin-top: 14px;
+}
+
