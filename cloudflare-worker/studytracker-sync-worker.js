@@ -35,8 +35,21 @@ function jsonResponse(obj, { status = 200, headers = {} } = {}) {
 }
 
 function corsHeaders(request, env) {
-  const origin = request.headers.get('Origin') || '*';
+  const originHeader = request.headers.get('Origin');
+  const origin = originHeader || '*';
   const allowed = String(env.ALLOWED_ORIGINS || '').trim();
+
+  // Some contexts (file://, sandboxed iframes, some webviews) send Origin: null.
+  // For token-based APIs (no cookies), wildcard is acceptable and avoids mismatches.
+  if (!originHeader || originHeader === 'null') {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      'Access-Control-Max-Age': '86400'
+    };
+  }
+
   if (!allowed) {
     return {
       'Access-Control-Allow-Origin': origin,
@@ -60,6 +73,7 @@ function corsHeaders(request, env) {
 
   return {
     'Access-Control-Allow-Origin': 'null',
+    Vary: 'Origin',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
     'Access-Control-Max-Age': '86400'
@@ -361,4 +375,6 @@ export default {
     return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
   }
 };
+
+
 

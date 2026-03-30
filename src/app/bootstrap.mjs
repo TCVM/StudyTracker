@@ -1,4 +1,4 @@
-import { loadTheme } from '../utils/helpers.js';
+import { loadTheme, showNotification } from '../utils/helpers.js';
 import { setCurrentSubject } from './core/state.mjs';
 import { checkAchievementsV2 } from './features/achievements/core.mjs';
 import { setupAdditionalEventListeners, setupEventListeners } from './ui/events.mjs';
@@ -9,7 +9,7 @@ import { loadSharedSubjects } from './shared/core.mjs';
 import { renderAll } from './ui/render.mjs';
 import { setActiveView } from './ui/flow.mjs';
 import { setIsDarkMode } from './core/ui-state.mjs';
-import { claimCloudSyncTokenFromUrl } from './sync/cloud-sync.mjs';
+import { claimCloudSyncTokenFromUrl, getCloudSessionInfo } from './sync/cloud-sync.mjs';
 
 function openHomeView() {
   setCurrentSubject(null);
@@ -20,7 +20,12 @@ function openHomeView() {
 }
 
 function initApp() {
-  claimCloudSyncTokenFromUrl();
+  const claimed = claimCloudSyncTokenFromUrl();
+  if (claimed) {
+    const info = getCloudSessionInfo();
+    if (info?.login) showNotification(`Conectado como @${info.login}.`);
+    else showNotification('Conectado para sincronizar.');
+  }
   loadData();
   checkAchievementsV2({ activity: 'generic', nowMs: Date.now(), silent: true });
   void loadSharedSubjects();
