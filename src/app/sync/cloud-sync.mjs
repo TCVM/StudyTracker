@@ -47,6 +47,11 @@ export function setCloudSyncConfig(next) {
     baseUrl: normalizeBaseUrl(merged.baseUrl),
     sessionToken: String(merged.sessionToken ?? '')
   }));
+  try {
+    document.dispatchEvent(new CustomEvent('cloud-sync-updated'));
+  } catch {
+    // ignore
+  }
   return getCloudSyncConfig();
 }
 
@@ -56,6 +61,11 @@ export function clearCloudSyncSession() {
     baseUrl: String(current.baseUrl ?? ''),
     sessionToken: ''
   }));
+  try {
+    document.dispatchEvent(new CustomEvent('cloud-sync-updated'));
+  } catch {
+    // ignore
+  }
 }
 
 export function claimCloudSyncTokenFromUrl() {
@@ -65,6 +75,11 @@ export function claimCloudSyncTokenFromUrl() {
   setCloudSyncConfig({ sessionToken: token });
   u.searchParams.delete('sync_token');
   window.history.replaceState({}, '', u.toString());
+  try {
+    document.dispatchEvent(new CustomEvent('cloud-sync-updated'));
+  } catch {
+    // ignore
+  }
   return true;
 }
 

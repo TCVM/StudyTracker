@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Tracker - Sistema de Estudio General</title>
     <meta name="theme-color" content="#0b1220">
-    <meta name="studytracker-sync-base-url" content="">
+    <meta name="studytracker-sync-base-url" content="https://studytracker-sync.tcvm2022.workers.dev">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
@@ -44,6 +44,10 @@
                     <button class="nav-item" data-view="globalSkillTreeView" type="button">
                         <span class="nav-icon">&#127795;</span>
                         <span class="nav-text">&Aacute;rbol</span>
+                    </button>
+                    <button class="nav-item" data-view="settingsView" type="button">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Ajustes</span>
                     </button>
                 </div>
                 
@@ -133,37 +137,18 @@
                                  <div class="action-desc">Comienza a estudiar con el timer</div>
                              </button>
                              
-                             <button class="action-card" id="quickViewStats">
-                                 <div class="action-icon">📉</div>
-                                 <div class="action-title">Ver Estadísticas</div>
-                                 <div class="action-desc">Analiza tu progreso detallado</div>
-                             </button>
-
-                             <button class="action-card" id="quickResetAll">
-                                 <div class="action-icon">🧨</div>
-                                 <div class="action-title">Reiniciar TODO</div>
-                                 <div class="action-desc">Borra todas las materias y el progreso global</div>
-                             </button>
-
-                             <button class="action-card" id="quickExportBackup" type="button">
-                                 <div class="action-icon">💾</div>
-                                 <div class="action-title">Exportar Backup</div>
-                                 <div class="action-desc">Descarga un .json con tu progreso completo</div>
-                             </button>
-
-                              <button class="action-card" id="quickImportBackup" type="button">
-                                  <div class="action-icon">📥</div>
-                                  <div class="action-title">Importar Backup</div>
-                                  <div class="action-desc">Restaura materias, logros y progreso desde .json</div>
+                              <button class="action-card" id="quickViewStats">
+                                  <div class="action-icon">📉</div>
+                                  <div class="action-title">Ver Estadísticas</div>
+                                  <div class="action-desc">Analiza tu progreso detallado</div>
                               </button>
 
-                              <button class="action-card" id="quickGitHubSync" type="button">
-                                  <div class="action-icon">☁️</div>
-                                  <div class="action-title">Sincronizar (GitHub)</div>
-                                  <div class="action-desc">Subí/bajá un backup cifrado para usar en otros dispositivos</div>
+                              <button class="action-card" id="quickOpenSettings" type="button">
+                                  <div class="action-icon">⚙️</div>
+                                  <div class="action-title">Ajustes</div>
+                                  <div class="action-desc">Sincronización, backups y opciones</div>
                               </button>
                           </div>
-                          <input id="backupImportFile" type="file" accept="application/json" hidden>
                       </div>
 
                     <div class="recent-subjects">
@@ -215,6 +200,94 @@
                         </div>
                         <div class="global-skill-meta" id="globalSkillMeta"></div>
                         <div class="global-skill-tree" id="globalSkillTreeContainer"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ajustes -->
+            <section class="view" id="settingsView" aria-label="Ajustes">
+                <div class="container">
+                    <header class="header">
+                        <div class="header-content">
+                            <div class="subject-header">
+                                <div class="subject-info">
+                                    <h1 class="title">Ajustes</h1>
+                                    <p class="subtitle">Sincronización, backups y preferencias</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Sincronización</h2>
+                            <div class="panel-subtitle" id="settingsSyncStatus">Estado: …</div>
+                        </div>
+
+                        <div class="actions-grid">
+                            <button class="btn btn-secondary" id="settingsSyncConnectBtn" type="button">Conectar</button>
+                            <button class="btn btn-secondary" id="settingsSyncLogoutBtn" type="button">Cerrar sesión</button>
+                            <button class="btn btn-primary" id="settingsSyncUploadBtn" type="button">Subir</button>
+                            <button class="btn btn-secondary" id="settingsSyncDownloadBtn" type="button">Bajar último</button>
+                        </div>
+
+                        <div class="panel" style="margin-top: 14px;">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Historial</h3>
+                                <div class="panel-subtitle">Últimos backups</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="settingsSyncHistorySelect">Elegir backup</label>
+                                <select id="settingsSyncHistorySelect" class="form-control"></select>
+                            </div>
+                            <div class="actions-grid">
+                                <button class="btn btn-secondary" id="settingsSyncHistoryRefreshBtn" type="button">Actualizar</button>
+                                <button class="btn btn-secondary" id="settingsSyncHistoryRestoreBtn" type="button">Restaurar</button>
+                            </div>
+                        </div>
+
+                        <div class="panel" style="margin-top: 14px;">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Auto-sync</h3>
+                                <div class="panel-subtitle">Opcional (requiere guardar la clave en este dispositivo)</div>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input id="settingsAutoSyncOnSave" type="checkbox">
+                                    Auto-subir al guardar cambios
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="settingsAutoSyncIntervalMin">Auto-subir cada (min)</label>
+                                <input id="settingsAutoSyncIntervalMin" class="form-control" type="number" min="0" max="120" step="1" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="settingsSyncPassphrase">Clave de cifrado</label>
+                                <input id="settingsSyncPassphrase" class="form-control" type="password" placeholder="No se guarda por defecto">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input id="settingsSyncRememberPassphrase" type="checkbox">
+                                    Recordar clave en este dispositivo (menos seguro)
+                                </label>
+                            </div>
+                            <div class="actions-grid">
+                                <button class="btn btn-secondary" id="settingsSyncSavePassphraseBtn" type="button">Guardar clave</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel" style="margin-top: 18px;">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Datos</h2>
+                            <div class="panel-subtitle">Backups locales y reinicio</div>
+                        </div>
+                        <div class="actions-grid">
+                            <button class="btn btn-secondary" id="quickExportBackup" type="button">💾 Exportar Backup</button>
+                            <button class="btn btn-secondary" id="quickImportBackup" type="button">📥 Importar Backup</button>
+                            <button class="btn btn-danger" id="quickResetAll" type="button">🧨 Reiniciar TODO</button>
+                        </div>
+                        <input id="backupImportFile" type="file" accept="application/json" hidden>
                     </div>
                 </div>
             </section>

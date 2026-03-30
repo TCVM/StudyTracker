@@ -225,6 +225,11 @@ export function saveData(force = false) {
     const state = getAppState();
     if (!state || typeof state !== 'object' || !Array.isArray(state.subjects)) return;
     localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
+
+    // Optional: auto-sync (cloud) on save, if enabled.
+    import('../sync/auto-upload.mjs')
+      .then((m) => m?.notifyLocalSave?.())
+      .catch(() => {});
   } catch (e) {
     const name = String(e?.name ?? '');
     const msg = String(e?.message ?? '');

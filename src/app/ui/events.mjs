@@ -1009,6 +1009,23 @@ export function setupEventListeners() {
     });
   }
 
+  const quickOpenSettings = byId('quickOpenSettings');
+  if (quickOpenSettings) {
+    quickOpenSettings.addEventListener('click', async () => {
+      setCurrentSubject(null);
+      setActiveView('settingsView');
+      document.querySelectorAll('.nav-item').forEach((b) => {
+        b.classList.toggle('active', b.dataset.view === 'settingsView');
+      });
+      try {
+        const mod = await import('./settings.mjs');
+        await mod.activateSettingsView?.();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+
   if (backupImportFile) {
     backupImportFile.addEventListener('change', () => {
       const file = backupImportFile.files && backupImportFile.files[0];
@@ -1058,6 +1075,22 @@ export function setupEventListeners() {
         b.classList.toggle('active', b.dataset.view === 'globalSkillTreeView');
       });
       renderGlobalSkillTree();
+    });
+  });
+
+  document.querySelectorAll('.nav-item[data-view="settingsView"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      setCurrentSubject(null);
+      setActiveView('settingsView');
+      document.querySelectorAll('.nav-item').forEach((b) => {
+        b.classList.toggle('active', b.dataset.view === 'settingsView');
+      });
+      try {
+        const mod = await import('./settings.mjs');
+        await mod.activateSettingsView?.();
+      } catch (e) {
+        console.error(e);
+      }
     });
   });
 }
