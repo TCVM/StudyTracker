@@ -1,4 +1,4 @@
-import { getAppState, getCurrentSubject, setCurrentSubject } from '../core/state.mjs';
+﻿import { getAppState, getCurrentSubject, setCurrentSubject } from '../core/state.mjs';
 import { applyTheme, showNotification } from '../../utils/helpers.js';
 import { completeTopicReview, toggleTopicCompleted } from '../features/topics/actions.mjs';
 import { addExamCategory, addExamItem, toggleExamCompleted, attachExamFile, addExamQuestion, deleteExamQuestion, renderExams } from '../features/exams/exams.mjs';
@@ -26,7 +26,10 @@ import { addPractice, addExercise, toggleExerciseDone, renderPractices } from '.
 import { openTopicNoteModal, setupTopicNoteModal } from '../features/topic-notes/topic-notes.mjs';
 import { deletePracticeAnswer, openPracticeAnswerModal, setupPracticeAnswerModal } from '../features/practices/answers-modal.mjs';
 import { setupImageViewer } from './image-viewer.mjs';
+import { showConfirmModalV2 } from './confirm-modal.mjs';
+import { showPromptModal } from './prompt-modal.mjs';
 import { deleteExamAnswer, openExamAnswerModal, setupExamAnswerModal } from '../features/exams/answers-modal.mjs';
+import { showSyncModal } from './sync-modal.mjs';
 import {
   addSubject,
   applyImportedSubjectToDraft,
@@ -50,6 +53,12 @@ import {
   syncCustomAchievementTypeUi
 } from '../features/subject/edit-modal.mjs';
 import { createDraftCategory } from '../features/subject/drafts.mjs';
+import {
+  downloadEncryptedBackupFromGitHubGist,
+  getGitHubGistSyncConfig,
+  setGitHubGistSyncConfig,
+  uploadEncryptedBackupToGitHubGist
+} from '../sync/github-sync.mjs';
 
 function byId(id) {
   return document.getElementById(id);
@@ -60,6 +69,108 @@ function toggleThemeCompat() {
   applyTheme(next);
   setIsDarkMode(next);
   return next;
+}
+
+function setupMobileNav() {
+  const toggleBtn = byId('mobileNavToggle');
+  const overlay = byId('mobileNavOverlay');
+  const sidebar = byId('sidebar');
+  if (!toggleBtn || !overlay || !sidebar) return;
+
+  const setOpen = (open) => {
+    document.body.classList.toggle('mobile-nav-open', open);
+    overlay.hidden = !open;
+    toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
+  toggleBtn.addEventListener('click', () => {
+    setOpen(!document.body.classList.contains('mobile-nav-open'));
+  });
+
+  overlay.addEventListener('click', () => setOpen(false));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!document.body.classList.contains('mobile-nav-open')) return;
+    const target = (e.target instanceof Element) ? e.target : null;
+    if (!target) return;
+    if (!target.closest('#sidebar')) return;
+
+    if (target.closest('.nav-item, #addSubjectBtn, #themeToggleBtn')) {
+      setOpen(false);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.matchMedia('(min-width: 769px)').matches) setOpen(false);
+  });
+}
+
+async function ensureGitHubGistSyncConfigured() {
+  const current = getGitHubGistSyncConfig();
+  if (current.token) return current;
+
+  const token = await showPromptModal({
+    title: 'Sincronización (GitHub)',
+    label: 'GitHub Token (scope: gist)',
+    inputType: 'password',
+    placeholder: 'ghp_...',
+    hint: 'Se guarda solo en este dispositivo. Recomendado: scope \"gist\".'
+  });
+
+  if (token == null) return null;
+
+  const trimmed = String(token).trim();
+  if (!trimmed) {
+    showNotification('Token vacío.');
+    return null;
+  }
+
+  const next = setGitHubGistSyncConfig({ token: trimmed });
+  showNotification('Sync configurado en este dispositivo.');
+  return next;
+}
+
+async function promptPassphrase() {
+  const passphrase = await showPromptModal({
+    title: 'Cifrado del Backup',
+    label: 'Contraseña (no se guarda)',
+    inputType: 'password',
+    hint: 'Si la perdés, no se puede recuperar el backup cifrado.'
+  });
+
+  if (passphrase == null) return null;
+  const p = String(passphrase).trim();
+  if (!p) {
+    showNotification('Contraseña vacía.');
+    return null;
+  }
+  return p;
+}
+
+async function ensureGistIdConfigured() {
+  const cfg = getGitHubGistSyncConfig();
+  if (cfg.gistId) return cfg;
+
+  const gistId = await showPromptModal({
+    title: 'Sincronización (GitHub)',
+    label: 'Gist ID',
+    placeholder: 'Pegá el ID del Gist (se crea al subir)',
+    defaultValue: '',
+    hint: 'Si aún no tenés Gist, usá "Subir backup" primero.'
+  });
+
+  if (gistId == null) return null;
+  const gid = String(gistId).trim();
+  if (!gid) {
+    showNotification('Gist ID vacío.');
+    return null;
+  }
+
+  return setGitHubGistSyncConfig({ gistId: gid });
 }
 
 export function setupEventListeners() {
@@ -752,6 +863,73 @@ export function setupEventListeners() {
     });
   }
 
+  const quickGitHubSync = byId('quickGitHubSync');
+  if (quickGitHubSync) {
+    quickGitHubSync.addEventListener('click', async () => {
+      const cfg = getGitHubGistSyncConfig();
+      const status = `Token: ${cfg.token ? 'OK' : 'Falta'} | Gist: ${cfg.gistId ? cfg.gistId : 'No (se crea al subir)'}`;
+      const action = await showSyncModal({ status });
+      if (!action) return;
+
+      if (action === 'setup') {
+        await ensureGitHubGistSyncConfigured();
+        return;
+      }
+
+      if (action === 'upload') {
+        const configured = await ensureGitHubGistSyncConfigured();
+        if (!configured) return;
+
+        const passphrase = await promptPassphrase();
+        if (!passphrase) return;
+
+        const ok = await showConfirmModalV2({
+          title: 'Subir backup cifrado',
+          text: 'Esto sube un backup cifrado a GitHub (Gist). Si ya existe, lo reemplaza.',
+          confirmText: 'Subir',
+          cancelText: 'Cancelar',
+          fallbackText: '¿Subir backup cifrado a GitHub?'
+        });
+        if (!ok) return;
+
+        try {
+          const res = await uploadEncryptedBackupToGitHubGist({ token: configured.token, passphrase });
+          showNotification(`Backup subido. Gist: ${res.gistId}`);
+        } catch (e) {
+          showNotification(String(e?.message ?? e ?? 'Error al subir.'));
+        }
+        return;
+      }
+
+      if (action === 'download') {
+        const configured = await ensureGitHubGistSyncConfigured();
+        if (!configured) return;
+
+        const withGist = await ensureGistIdConfigured();
+        if (!withGist) return;
+
+        const passphrase = await promptPassphrase();
+        if (!passphrase) return;
+
+        const ok = await showConfirmModalV2({
+          title: 'Bajar backup cifrado',
+          text: 'Esto descarga y descifra el backup del Gist, y luego te pedirá confirmación para importar (reemplaza tu progreso actual).',
+          confirmText: 'Bajar',
+          cancelText: 'Cancelar',
+          fallbackText: '¿Bajar backup cifrado desde GitHub?'
+        });
+        if (!ok) return;
+
+        try {
+          const res = await downloadEncryptedBackupFromGitHubGist({ token: configured.token, gistId: withGist.gistId, passphrase });
+          showNotification(`Backup descargado. Gist: ${res.gistId}`);
+        } catch (e) {
+          showNotification(String(e?.message ?? e ?? 'Error al bajar.'));
+        }
+      }
+    });
+  }
+
   if (backupImportFile) {
     backupImportFile.addEventListener('change', () => {
       const file = backupImportFile.files && backupImportFile.files[0];
@@ -806,6 +984,8 @@ export function setupEventListeners() {
 }
 
 export function setupAdditionalEventListeners() {
+  setupMobileNav();
+
   const themeToggleBtn = byId('themeToggleBtn');
   if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => toggleThemeCompat());
 
@@ -819,3 +999,5 @@ export function setupAdditionalEventListeners() {
     });
   }
 }
+
+

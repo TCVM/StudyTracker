@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <button id="mobileNavToggle" class="icon-btn mobile-nav-toggle" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">&#9776;</button>
+    <div id="mobileNavOverlay" class="mobile-nav-overlay" hidden></div>
     <div class="app-container">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -148,14 +150,20 @@
                                  <div class="action-desc">Descarga un .json con tu progreso completo</div>
                              </button>
 
-                             <button class="action-card" id="quickImportBackup" type="button">
-                                 <div class="action-icon">📥</div>
-                                 <div class="action-title">Importar Backup</div>
-                                 <div class="action-desc">Restaura materias, logros y progreso desde .json</div>
-                             </button>
-                         </div>
-                         <input id="backupImportFile" type="file" accept="application/json" hidden>
-                     </div>
+                              <button class="action-card" id="quickImportBackup" type="button">
+                                  <div class="action-icon">📥</div>
+                                  <div class="action-title">Importar Backup</div>
+                                  <div class="action-desc">Restaura materias, logros y progreso desde .json</div>
+                              </button>
+
+                              <button class="action-card" id="quickGitHubSync" type="button">
+                                  <div class="action-icon">☁️</div>
+                                  <div class="action-title">Sincronizar (GitHub)</div>
+                                  <div class="action-desc">Subí/bajá un backup cifrado para usar en otros dispositivos</div>
+                              </button>
+                          </div>
+                          <input id="backupImportFile" type="file" accept="application/json" hidden>
+                      </div>
 
                     <div class="recent-subjects">
                         <h2>Materias Recientes</h2>
