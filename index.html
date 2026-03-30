@@ -22,16 +22,13 @@
                          <span class="logo-icon">📚</span>
                          <span class="logo-text">Study Tracker</span>
                      </div>
-                     <span id="sidebarSyncBadge" class="sync-badge" hidden></span>
-                     <button id="themeToggleBtn" class="icon-btn" type="button" title="Alternar modo nocturno">🌙</button>
+                    <button id="themeToggleBtn" class="icon-btn" type="button" title="Alternar modo nocturno">🌙</button>
                  </div>
 
-                 <div class="sync-account-row" id="sidebarSyncAccountRow">
-                     <div class="sync-account" id="sidebarSyncAccount" role="button" tabindex="0" title="Abrir ajustes de sincronización">
-                         <img id="sidebarSyncAvatar" class="sync-avatar" alt="" hidden>
-                         <span id="sidebarSyncAccountText" class="sync-account-text">Sync: no conectado</span>
-                     </div>
-                     <button class="btn btn-small btn-secondary" id="sidebarSyncConnectBtn" type="button">Conectar</button>
+                 <div class="sync-mini-row" id="sidebarSyncMiniRow">
+                     <img id="sidebarSyncMiniAvatar" class="sync-inline-avatar" alt="" hidden>
+                     <span id="sidebarSyncMiniText" class="sync-mini-text">Sync: no conectado</span>
+                     <button class="btn btn-small btn-secondary" id="sidebarSyncMiniConnectBtn" type="button">Conectar</button>
                  </div>
                  <button class="btn-add-subject" id="addSubjectBtn">
                      <span class="btn-icon">+</span>
@@ -68,19 +65,16 @@
         </aside>
 
         <main class="main-content">
-            <div class="top-sync-bar" id="topSyncBar">
-                <div class="sync-account" id="topSyncAccount" role="button" tabindex="0" title="Abrir ajustes de sincronización">
-                    <img id="topSyncAvatar" class="sync-avatar" alt="" hidden>
-                    <span id="topSyncAccountText" class="sync-account-text">Sync: no conectado</span>
-                </div>
-                <button class="btn btn-small btn-secondary" id="topSyncConnectBtn" type="button">Conectar</button>
-            </div>
             <!-- Página de Inicio (Global) -->
             <section class="view view-active" id="homeView">
                 <div class="home-container">
                     <div class="home-header">
                         <h1 class="home-title">¡Bienvenido a tu Sistema de Estudio!</h1>
                         <p class="home-subtitle">Organiza tus materias y sigue tu progreso global</p>
+                        <div class="sync-status-inline" id="homeSyncInline">
+                            <img id="homeSyncInlineAvatar" class="sync-inline-avatar" alt="" hidden>
+                            <span id="homeSyncInlineText" class="sync-inline-text">Sync: no conectado</span>
+                        </div>
                     </div>
 
                     <div class="home-stats">
@@ -229,6 +223,10 @@
                                 <div class="subject-info">
                                     <h1 class="title">Ajustes</h1>
                                     <p class="subtitle">Sincronización, backups y preferencias</p>
+                                    <div class="sync-status-inline" id="settingsSyncInline">
+                                        <img id="settingsSyncInlineAvatar" class="sync-inline-avatar" alt="" hidden>
+                                        <span id="settingsSyncInlineText" class="sync-inline-text">Sync: no conectado</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -247,14 +245,14 @@
                             <button class="btn btn-secondary" id="settingsSyncDownloadBtn" type="button">Bajar último</button>
                         </div>
 
-                        <div class="panel" style="margin-top: 14px;">
-                            <div class="panel-header">
-                                <h3 class="panel-title">Historial</h3>
-                                <div class="panel-subtitle">Últimos backups</div>
-                            </div>
-                            <div class="form-group">
-                                <label for="settingsSyncHistorySelect">Elegir backup</label>
-                                <select id="settingsSyncHistorySelect" class="form-control"></select>
+                         <div class="panel" style="margin-top: 14px;">
+                             <div class="panel-header">
+                                 <h3 class="panel-title">Historial</h3>
+                                 <div class="panel-subtitle" id="settingsSyncHistoryHelp">Últimos backups</div>
+                             </div>
+                             <div class="form-group">
+                                 <label for="settingsSyncHistorySelect">Elegir backup</label>
+                                 <select id="settingsSyncHistorySelect" class="form-control"></select>
                             </div>
                             <div class="actions-grid">
                                 <button class="btn btn-secondary" id="settingsSyncHistoryRefreshBtn" type="button">Actualizar</button>

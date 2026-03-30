@@ -67,6 +67,9 @@ async function refreshHistorySelect() {
   const select = byId('settingsSyncHistorySelect');
   if (!select) return;
 
+  const help = byId('settingsSyncHistoryHelp');
+  if (help) help.textContent = 'Últimos backups';
+
   select.innerHTML = '';
   ensureSelectOption(select, '', '—');
 
@@ -84,9 +87,13 @@ async function refreshHistorySelect() {
     }
   } catch (e) {
     const msg = String(e?.message ?? e ?? 'No se pudo obtener historial.');
+    const help = byId('settingsSyncHistoryHelp');
     if (msg.toLowerCase().includes('not found')) {
-      ensureSelectOption(select, '', 'Tu backend no tiene historial (actualizá el Worker)');
+      if (help) help.textContent = 'Historial no disponible (tu Worker todavía no fue actualizado).';
+      ensureSelectOption(select, '', 'Historial no disponible');
+      return;
     }
+    if (help) help.textContent = 'Últimos backups';
     showNotification(msg);
   }
 }
@@ -335,5 +342,6 @@ export function ensureSettingsUi() {
 export async function activateSettingsView() {
   ensureSettingsUi();
   renderSettings();
-  await refreshHistorySelect();
+  const session = getCloudSessionInfo();
+  if (session) await refreshHistorySelect();
 }

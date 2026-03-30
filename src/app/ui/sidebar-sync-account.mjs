@@ -1,32 +1,8 @@
 import { showNotification } from '../../utils/helpers.js';
 import { buildCloudAuthStartUrl, getCloudSessionInfo, getCloudSyncConfig } from '../sync/cloud-sync.mjs';
-import { setActiveView } from './flow.mjs';
-import { setCurrentSubject } from '../core/state.mjs';
 
 function byId(id) {
   return document.getElementById(id);
-}
-
-function bindOnce(el, key) {
-  if (!el) return false;
-  const k = `data-${key}`;
-  if (el.getAttribute(k) === '1') return false;
-  el.setAttribute(k, '1');
-  return true;
-}
-
-async function openSettingsView() {
-  setCurrentSubject(null);
-  setActiveView('settingsView');
-  document.querySelectorAll('.nav-item').forEach((b) => {
-    b.classList.toggle('active', b.dataset.view === 'settingsView');
-  });
-  try {
-    const mod = await import('./settings.mjs');
-    await mod.activateSettingsView?.();
-  } catch (e) {
-    console.error(e);
-  }
 }
 
 function startConnectFlow() {
@@ -36,19 +12,16 @@ function startConnectFlow() {
     url = buildCloudAuthStartUrl({ baseUrl: cfg.baseUrl, redirectUrl: window.location.href });
   } catch (e) {
     showNotification(String(e?.message ?? e ?? 'URL inválida.'));
-    void openSettingsView();
     return;
   }
   showNotification('Redirigiendo a GitHub…');
   window.location.assign(url);
 }
 
-function renderAccountBlock({ accountId, avatarId, textId, btnId }) {
-  const account = byId(accountId);
+function renderInlineStatus({ avatarId, textId }) {
   const avatar = byId(avatarId);
   const text = byId(textId);
-  const btn = byId(btnId);
-  if (!account && !btn && !text && !avatar) return;
+  if (!text && !avatar) return;
 
   const session = getCloudSessionInfo();
   const connected = !!session;
@@ -71,60 +44,24 @@ function renderAccountBlock({ accountId, avatarId, textId, btnId }) {
       avatar.alt = '';
     }
   }
-
-  if (btn) {
-    btn.textContent = connected ? 'Ajustes' : 'Conectar';
-    btn.disabled = false;
-  }
-
-  if (account) {
-    account.setAttribute('aria-label', connected ? 'Abrir ajustes de sincronización' : 'Conectar sincronización');
-  }
 }
 
 export function renderSidebarSyncAccount() {
-  renderAccountBlock({
-    accountId: 'sidebarSyncAccount',
-    avatarId: 'sidebarSyncAvatar',
-    textId: 'sidebarSyncAccountText',
-    btnId: 'sidebarSyncConnectBtn'
-  });
-  renderAccountBlock({
-    accountId: 'topSyncAccount',
-    avatarId: 'topSyncAvatar',
-    textId: 'topSyncAccountText',
-    btnId: 'topSyncConnectBtn'
-  });
-}
+  renderInlineStatus({ avatarId: 'sidebarSyncMiniAvatar', textId: 'sidebarSyncMiniText' });
+  renderInlineStatus({ avatarId: 'homeSyncInlineAvatar', textId: 'homeSyncInlineText' });
+  renderInlineStatus({ avatarId: 'settingsSyncInlineAvatar', textId: 'settingsSyncInlineText' });
 
-function initAccountBlock({ accountId, btnId }) {
-  const account = byId(accountId);
-  const btn = byId(btnId);
-
-  const onConnectOrSettings = () => {
-    const session = getCloudSessionInfo();
-    if (session) void openSettingsView();
-    else startConnectFlow();
-  };
-
-  if (account && bindOnce(account, 'sync-account-bound')) {
-    account.addEventListener('click', () => onConnectOrSettings());
-    account.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onConnectOrSettings();
-      }
-    });
-  }
-
-  if (btn && bindOnce(btn, 'sync-account-btn-bound')) {
-    btn.addEventListener('click', () => onConnectOrSettings());
-  }
+  const session = getCloudSessionInfo();
+  const btn = byId('sidebarSyncMiniConnectBtn');
+  if (btn) btn.hidden = !!session;
 }
 
 export function initSidebarSyncAccount() {
-  initAccountBlock({ accountId: 'sidebarSyncAccount', btnId: 'sidebarSyncConnectBtn' });
-  initAccountBlock({ accountId: 'topSyncAccount', btnId: 'topSyncConnectBtn' });
+  const btn = byId('sidebarSyncMiniConnectBtn');
+  if (btn && btn.getAttribute('data-sync-bound') !== '1') {
+    btn.setAttribute('data-sync-bound', '1');
+    btn.addEventListener('click', () => startConnectFlow());
+  }
   document.addEventListener('cloud-sync-updated', () => renderSidebarSyncAccount());
   renderSidebarSyncAccount();
 }

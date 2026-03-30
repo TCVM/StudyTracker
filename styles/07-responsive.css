@@ -53,9 +53,7 @@
         padding-top: calc(58px + env(safe-area-inset-top, 0px));
     }
 
-    .top-sync-bar {
-        padding: 10px 15px;
-    }
+
 
     .mobile-nav-toggle {
         display: grid;
