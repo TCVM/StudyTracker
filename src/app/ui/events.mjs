@@ -55,8 +55,10 @@ import {
 import { createDraftCategory } from '../features/subject/drafts.mjs';
 import {
   downloadEncryptedBackupFromGitHubGist,
+  finishGitHubDeviceFlow,
   getGitHubGistSyncConfig,
   setGitHubGistSyncConfig,
+  startGitHubDeviceFlow,
   uploadEncryptedBackupToGitHubGist
 } from '../sync/github-sync.mjs';
 
@@ -109,29 +111,73 @@ function setupMobileNav() {
   });
 }
 
-async function ensureGitHubGistSyncConfigured() {
+async function ensureGitHubGistSyncAuthorized() {
   const current = getGitHubGistSyncConfig();
   if (current.token) return current;
 
-  const token = await showPromptModal({
-    title: 'Sincronización (GitHub)',
-    label: 'GitHub Token (scope: gist)',
-    inputType: 'password',
-    placeholder: 'ghp_...',
-    hint: 'Se guarda solo en este dispositivo. Recomendado: scope \"gist\".'
-  });
+  let cid = String(current.clientId ?? '').trim();
+  if (!cid) {
+    const clientId = await showPromptModal({
+      title: 'Sincronización (GitHub)',
+      label: 'GitHub OAuth Client ID',
+      placeholder: 'Iv1....',
+      hint: 'Lo define el dueño de la app (OAuth App en GitHub). Se guarda en este dispositivo.'
+    });
 
-  if (token == null) return null;
+    if (clientId == null) return null;
+    cid = String(clientId).trim();
+    if (!cid) {
+      showNotification('Client ID vacío.');
+      return null;
+    }
+  }
 
-  const trimmed = String(token).trim();
-  if (!trimmed) {
-    showNotification('Token vacío.');
+  let device;
+  try {
+    device = await startGitHubDeviceFlow({ clientId: cid, scope: 'gist' });
+  } catch (e) {
+    showNotification(String(e?.message ?? e ?? 'No se pudo iniciar la conexión.'));
     return null;
   }
 
-  const next = setGitHubGistSyncConfig({ token: trimmed });
-  showNotification('Sync configurado en este dispositivo.');
-  return next;
+  try {
+    await navigator.clipboard?.writeText?.(device.userCode);
+  } catch {
+    // ignore
+  }
+
+  const ok = await showConfirmModalV2({
+    title: 'Conectar con GitHub',
+    text: `Abrí ${device.verificationUri} e ingresá el código:\n\n${device.userCode}\n\n(Si se pudo, ya lo copié al portapapeles.)`,
+    confirmText: 'Abrir GitHub',
+    cancelText: 'Cerrar',
+    fallbackText: `Abrí ${device.verificationUri} e ingresá el código ${device.userCode}`
+  });
+
+  if (!ok) return null;
+
+  try {
+    window.open(device.verificationUri, '_blank', 'noopener,noreferrer');
+  } catch {
+    // ignore
+  }
+
+  showNotification('Esperando autorización de GitHub…');
+
+  try {
+    await finishGitHubDeviceFlow({
+      clientId: device.clientId,
+      deviceCode: device.deviceCode,
+      intervalSec: device.intervalSec,
+      expiresInSec: device.expiresInSec
+    });
+  } catch (e) {
+    showNotification(String(e?.message ?? e ?? 'No se pudo finalizar la conexión.'));
+    return null;
+  }
+
+  showNotification('Conectado a GitHub.');
+  return getGitHubGistSyncConfig();
 }
 
 async function promptPassphrase() {
@@ -867,17 +913,17 @@ export function setupEventListeners() {
   if (quickGitHubSync) {
     quickGitHubSync.addEventListener('click', async () => {
       const cfg = getGitHubGistSyncConfig();
-      const status = `Token: ${cfg.token ? 'OK' : 'Falta'} | Gist: ${cfg.gistId ? cfg.gistId : 'No (se crea al subir)'}`;
+      const status = `GitHub: ${cfg.token ? 'Conectado' : 'No conectado'} | Gist: ${cfg.gistId ? cfg.gistId : 'No (se crea al subir)'}`;
       const action = await showSyncModal({ status });
       if (!action) return;
 
       if (action === 'setup') {
-        await ensureGitHubGistSyncConfigured();
+        await ensureGitHubGistSyncAuthorized();
         return;
       }
 
       if (action === 'upload') {
-        const configured = await ensureGitHubGistSyncConfigured();
+        const configured = await ensureGitHubGistSyncAuthorized();
         if (!configured) return;
 
         const passphrase = await promptPassphrase();
@@ -902,7 +948,7 @@ export function setupEventListeners() {
       }
 
       if (action === 'download') {
-        const configured = await ensureGitHubGistSyncConfigured();
+        const configured = await ensureGitHubGistSyncAuthorized();
         if (!configured) return;
 
         const withGist = await ensureGistIdConfigured();

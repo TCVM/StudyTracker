@@ -23,7 +23,7 @@ function ensureSyncModal() {
       <div class="modal-body">
         <div class="exam-date-preview" id="syncModalStatus"></div>
         <div class="actions-grid" style="margin-top: 14px;">
-          <button class="btn btn-secondary" id="syncModalSetupBtn" type="button">Configurar</button>
+          <button class="btn btn-secondary" id="syncModalSetupBtn" type="button">Conectar</button>
           <button class="btn btn-primary" id="syncModalUploadBtn" type="button">Subir (crear/actualizar)</button>
           <button class="btn btn-secondary" id="syncModalDownloadBtn" type="button">Bajar backup</button>
         </div>

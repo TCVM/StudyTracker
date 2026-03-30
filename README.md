@@ -26,7 +26,7 @@ App web (sin backend) para llevar materias, temas, timer, prácticas y exámenes
 ## Sync (GitHub Gist)
 
 - En Home → `Sincronizar (GitHub)`.
-- `Configurar`: pegá un Personal Access Token con permiso `gist` (se guarda solo en este dispositivo).
+- `Conectar`: pegá el `Client ID` de un OAuth App y autorizá en `github.com/login/device` (se guarda solo en este dispositivo).
 - `Subir backup`: pide una contraseña (no se guarda) y crea/actualiza un Gist privado con el backup cifrado.
 - `Bajar backup`: pide el Gist ID (si falta) + la contraseña y luego importa el backup (reemplaza el progreso actual).
 - Nota: por ahora no sincroniza adjuntos/imágenes guardados en IndexedDB.

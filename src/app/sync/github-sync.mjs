@@ -5,6 +5,7 @@ import {
   fetchEncryptedBackupFromGist,
   updateEncryptedBackupGist
 } from './github-gist.mjs';
+import { pollGitHubDeviceAccessToken, requestGitHubDeviceCode } from './github-device-flow.mjs';
 
 const CONFIG_KEY = 'study-tracker:sync:github-gist:v1';
 const DEFAULT_FILENAME = 'study-tracker-backup.enc.json';
@@ -21,13 +22,14 @@ export function getGitHubGistSyncConfig() {
   const raw = localStorage.getItem(CONFIG_KEY);
   const parsed = raw ? safeJsonParse(raw) : null;
   if (!parsed || typeof parsed !== 'object') {
-    return { token: '', gistId: '', filename: DEFAULT_FILENAME };
+    return { token: '', gistId: '', filename: DEFAULT_FILENAME, clientId: '' };
   }
 
   return {
     token: typeof parsed.token === 'string' ? parsed.token : '',
     gistId: typeof parsed.gistId === 'string' ? parsed.gistId : '',
-    filename: typeof parsed.filename === 'string' && parsed.filename.trim() ? parsed.filename : DEFAULT_FILENAME
+    filename: typeof parsed.filename === 'string' && parsed.filename.trim() ? parsed.filename : DEFAULT_FILENAME,
+    clientId: typeof parsed.clientId === 'string' ? parsed.clientId : ''
   };
 }
 
@@ -41,7 +43,8 @@ export function setGitHubGistSyncConfig(next) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify({
     token: String(merged.token ?? ''),
     gistId: String(merged.gistId ?? ''),
-    filename: String(merged.filename ?? DEFAULT_FILENAME)
+    filename: String(merged.filename ?? DEFAULT_FILENAME),
+    clientId: String(merged.clientId ?? '')
   }));
 
   return getGitHubGistSyncConfig();
@@ -92,5 +95,31 @@ export async function downloadEncryptedBackupFromGitHubGist({ token, passphrase,
   await importBackupText(plainText);
   setGitHubGistSyncConfig({ token: t, gistId: gid, filename });
   return { gistId: gid };
+}
+
+export async function startGitHubDeviceFlow({ clientId, scope = 'gist' } = {}) {
+  const cfg = getGitHubGistSyncConfig();
+  const cid = String(clientId ?? cfg.clientId ?? '').trim();
+  if (!cid) throw new Error('Falta el Client ID del OAuth App.');
+
+  const device = await requestGitHubDeviceCode({ clientId: cid, scope });
+  setGitHubGistSyncConfig({ clientId: cid });
+  return { ...device, clientId: cid };
+}
+
+export async function finishGitHubDeviceFlow({ clientId, deviceCode, intervalSec, expiresInSec } = {}) {
+  const cfg = getGitHubGistSyncConfig();
+  const cid = String(clientId ?? cfg.clientId ?? '').trim();
+  if (!cid) throw new Error('Falta el Client ID del OAuth App.');
+
+  const token = await pollGitHubDeviceAccessToken({
+    clientId: cid,
+    deviceCode,
+    intervalSec,
+    expiresInSec
+  });
+
+  setGitHubGistSyncConfig({ token: token.accessToken, clientId: cid });
+  return { ...token, clientId: cid };
 }
 
