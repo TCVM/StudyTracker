@@ -11,6 +11,7 @@ import {
 import { showConfirmModalV2 } from './confirm-modal.mjs';
 import { showPromptModal } from './prompt-modal.mjs';
 import { getAutoSyncSettings, getStoredSyncPassphrase, setAutoSyncSettings, setStoredSyncPassphrase } from '../sync/auto-upload.mjs';
+import { checkCloudNow, getCloudWatchSettings, markAppliedRemoteId, setCloudWatchSettings } from '../sync/cloud-watch.mjs';
 
 function byId(id) {
   return document.getElementById(id);
@@ -115,6 +116,14 @@ function renderSettings() {
 
   const remember = byId('settingsSyncRememberPassphrase');
   if (remember) remember.checked = !!localStorage.getItem('study-tracker:sync:passphrase:remembered');
+
+  const watch = getCloudWatchSettings();
+  const autoPull = byId('settingsCloudAutoPullOnOpen');
+  if (autoPull) autoPull.checked = !!watch.autoPullOnOpen;
+  const notify = byId('settingsCloudNotifyRemoteChange');
+  if (notify) notify.checked = !!watch.notifyRemoteChange;
+  const poll = byId('settingsCloudPollSec');
+  if (poll) poll.value = String(watch.pollSec ?? 45);
 }
 
 let settingsBound = false;
@@ -198,6 +207,7 @@ export function ensureSettingsUi() {
         showNotification('Subiendo backup…');
         try {
           const res = await cloudUploadEncryptedBackup({ passphrase });
+          if (res?.id) markAppliedRemoteId(res.id);
           showNotification(`Backup subido (${res?.updatedAt ?? 'ok'}).`);
           await refreshHistorySelect();
         } catch (e) {
@@ -215,8 +225,9 @@ export function ensureSettingsUi() {
       await withBusy(['settingsSyncUploadBtn', 'settingsSyncDownloadBtn', 'settingsSyncHistoryRestoreBtn'], async () => {
         showNotification('Descargando backup…');
         try {
-          await cloudDownloadEncryptedBackup({ passphrase });
-          showNotification('Backup descargado.');
+          const res = await cloudDownloadEncryptedBackup({ passphrase });
+          if (res?.imported && res?.id) markAppliedRemoteId(res.id);
+          showNotification(res?.imported ? 'Backup descargado.' : 'Descarga lista (importación cancelada).');
         } catch (e) {
           showNotification(String(e?.message ?? e ?? 'Error al bajar.'));
         }
@@ -241,8 +252,9 @@ export function ensureSettingsUi() {
       await withBusy(['settingsSyncUploadBtn', 'settingsSyncDownloadBtn', 'settingsSyncHistoryRestoreBtn'], async () => {
         showNotification('Descargando backup del historial…');
         try {
-          await cloudDownloadBackupById({ id, passphrase });
-          showNotification('Backup restaurado.');
+          const res = await cloudDownloadBackupById({ id, passphrase });
+          if (res?.imported && res?.id) markAppliedRemoteId(res.id);
+          showNotification(res?.imported ? 'Backup restaurado.' : 'Descarga lista (importación cancelada).');
         } catch (e) {
           showNotification(String(e?.message ?? e ?? 'Error al restaurar.'));
         }
@@ -280,6 +292,40 @@ export function ensureSettingsUi() {
       }
       setStoredSyncPassphrase(passphrase, { remember });
       showNotification(remember ? 'Clave guardada (persistente).' : 'Clave guardada (solo esta sesión).');
+    });
+  }
+
+  const autoPull = byId('settingsCloudAutoPullOnOpen');
+  if (autoPull) {
+    autoPull.addEventListener('change', () => {
+      setCloudWatchSettings({ autoPullOnOpen: !!autoPull.checked });
+      showNotification(autoPull.checked ? 'Auto-actualizar al abrir: activado.' : 'Auto-actualizar al abrir: desactivado.');
+    });
+  }
+
+  const notify = byId('settingsCloudNotifyRemoteChange');
+  if (notify) {
+    notify.addEventListener('change', () => {
+      setCloudWatchSettings({ notifyRemoteChange: !!notify.checked });
+      showNotification(notify.checked ? 'Avisos de nube: activados.' : 'Avisos de nube: desactivados.');
+    });
+  }
+
+  const poll = byId('settingsCloudPollSec');
+  if (poll) {
+    poll.addEventListener('change', () => {
+      const v = Math.max(15, Math.min(600, parseInt(String(poll.value || '45'), 10) || 45));
+      poll.value = String(v);
+      setCloudWatchSettings({ pollSec: v });
+      showNotification(`Chequeo cada ${v}s.`);
+    });
+  }
+
+  const checkNow = byId('settingsCloudCheckNowBtn');
+  if (checkNow) {
+    checkNow.addEventListener('click', async () => {
+      showNotification('Chequeando nube…');
+      await checkCloudNow({ allowAutoPull: false, quiet: false });
     });
   }
 

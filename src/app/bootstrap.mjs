@@ -10,6 +10,8 @@ import { renderAll } from './ui/render.mjs';
 import { setActiveView } from './ui/flow.mjs';
 import { setIsDarkMode } from './core/ui-state.mjs';
 import { claimCloudSyncTokenFromUrl, getCloudSessionInfo } from './sync/cloud-sync.mjs';
+import { initCloudWatch } from './sync/cloud-watch.mjs';
+import { initSidebarSyncAccount } from './ui/sidebar-sync-account.mjs';
 
 function openHomeView() {
   setCurrentSubject(null);
@@ -26,6 +28,8 @@ function initApp() {
     if (info?.login) showNotification(`Conectado como @${info.login}.`);
     else showNotification('Conectado para sincronizar.');
   }
+  initSidebarSyncAccount();
+  initCloudWatch();
   loadData();
   checkAchievementsV2({ activity: 'generic', nowMs: Date.now(), silent: true });
   void loadSharedSubjects();

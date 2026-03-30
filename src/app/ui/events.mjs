@@ -1101,6 +1101,46 @@ export function setupAdditionalEventListeners() {
   const themeToggleBtn = byId('themeToggleBtn');
   if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => toggleThemeCompat());
 
+  const sidebarSyncBadge = byId('sidebarSyncBadge');
+  if (sidebarSyncBadge) {
+    sidebarSyncBadge.setAttribute('role', 'button');
+    sidebarSyncBadge.setAttribute('tabindex', '0');
+    if (!sidebarSyncBadge.getAttribute('title')) {
+      sidebarSyncBadge.setAttribute('title', 'Abrir Ajustes de sincronización');
+    }
+
+    const openSyncSettings = async () => {
+      setCurrentSubject(null);
+      setActiveView('settingsView');
+      document.querySelectorAll('.nav-item').forEach((b) => {
+        b.classList.toggle('active', b.dataset.view === 'settingsView');
+      });
+      try {
+        const overlay = byId('mobileNavOverlay');
+        const toggleBtn = byId('mobileNavToggle');
+        document.body.classList.remove('mobile-nav-open');
+        if (overlay) overlay.hidden = true;
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+      } catch {
+        // ignore
+      }
+      try {
+        const mod = await import('./settings.mjs');
+        await mod.activateSettingsView?.();
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    sidebarSyncBadge.addEventListener('click', () => void openSyncSettings());
+    sidebarSyncBadge.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        void openSyncSettings();
+      }
+    });
+  }
+
   const subjectList = byId('subjectList');
   if (subjectList) {
     subjectList.addEventListener('click', (e) => {

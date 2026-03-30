@@ -18,6 +18,10 @@
  * - GET  /auth/github/callback?code=...&state=...
  * - POST /api/backup  (Authorization: Bearer <sessionToken>)
  * - GET  /api/backup  (Authorization: Bearer <sessionToken>)
+ * - GET  /api/backup/meta (Authorization: Bearer <sessionToken>)
+ * - GET  /api/backups?limit=N (Authorization: Bearer <sessionToken>)
+ * - GET  /api/backups/:id (Authorization: Bearer <sessionToken>)
+ * - GET  /api/me (Authorization: Bearer <sessionToken>)
  */
 
 const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
@@ -194,7 +198,7 @@ async function fetchGitHubUser({ accessToken }) {
   if (!res.ok || !json || !json.id) {
     throw new Error(`No se pudo validar usuario (${res.status}).`);
   }
-  return { id: String(json.id), login: String(json.login || '') };
+  return { id: String(json.id), login: String(json.login || ''), avatarUrl: String(json.avatar_url || '') };
 }
 
 function buildGitHubState({ redirectUrl }) {
@@ -261,6 +265,7 @@ async function handleAuthCallback(request, env, url) {
     v: 1,
     sub: user.id,
     login: user.login,
+    avatarUrl: user.avatarUrl,
     iat: now,
     exp: now + 60 * 60 * 24 * 30
   });
@@ -282,12 +287,55 @@ async function requireUser(request, env) {
 async function handleBackupGet(request, env) {
   const user = await requireUser(request, env);
   if (!user?.sub) return unauthorized('No autorizado.', request, env);
-  const key = `u:${user.sub}:backup`;
-  const raw = await env.SYNC_KV.get(key, 'json');
+
+  // Preferred storage: versioned backups + latest pointer.
+  let latestId = await env.SYNC_KV.get(`u:${user.sub}:latest`);
+
+  // Backward compatibility: old single-key backup.
+  if (!latestId) {
+    const legacy = await env.SYNC_KV.get(`u:${user.sub}:backup`, 'json');
+    if (!legacy) {
+      return jsonResponse({ ok: true, hasBackup: false }, { headers: corsHeaders(request, env) });
+    }
+    return jsonResponse({ ok: true, hasBackup: true, id: '', ...legacy }, { headers: corsHeaders(request, env) });
+  }
+
+  latestId = String(latestId || '').trim();
+  const raw = await env.SYNC_KV.get(`u:${user.sub}:backup:${latestId}`, 'json');
   if (!raw) {
     return jsonResponse({ ok: true, hasBackup: false }, { headers: corsHeaders(request, env) });
   }
-  return jsonResponse({ ok: true, hasBackup: true, ...raw }, { headers: corsHeaders(request, env) });
+
+  return jsonResponse({ ok: true, hasBackup: true, id: latestId, ...raw }, { headers: corsHeaders(request, env) });
+}
+
+async function handleBackupMetaGet(request, env) {
+  const user = await requireUser(request, env);
+  if (!user?.sub) return unauthorized('No autorizado.', request, env);
+
+  let latestId = await env.SYNC_KV.get(`u:${user.sub}:latest`);
+
+  if (!latestId) {
+    const legacy = await env.SYNC_KV.get(`u:${user.sub}:backup`, 'json');
+    if (!legacy) {
+      return jsonResponse({ ok: true, hasBackup: false }, { headers: corsHeaders(request, env) });
+    }
+    return jsonResponse(
+      { ok: true, hasBackup: true, id: '', updatedAt: String(legacy?.updatedAt ?? '') },
+      { headers: corsHeaders(request, env) }
+    );
+  }
+
+  latestId = String(latestId || '').trim();
+  const raw = await env.SYNC_KV.get(`u:${user.sub}:backup:${latestId}`, 'json');
+  if (!raw) {
+    return jsonResponse({ ok: true, hasBackup: false }, { headers: corsHeaders(request, env) });
+  }
+
+  return jsonResponse(
+    { ok: true, hasBackup: true, id: latestId, updatedAt: String(raw?.updatedAt ?? '') },
+    { headers: corsHeaders(request, env) }
+  );
 }
 
 async function handleBackupPost(request, env) {
@@ -304,6 +352,9 @@ async function handleBackupPost(request, env) {
   const encryptedText = String(body?.encryptedText ?? '').trim();
   if (!encryptedText) return badRequest('Falta encryptedText.', request, env);
 
+  const maxBackups = 10;
+  const id = `${Date.now().toString(36)}-${randomHex(6)}`;
+
   const record = {
     encryptedText,
     updatedAt: new Date().toISOString(),
@@ -311,10 +362,21 @@ async function handleBackupPost(request, env) {
     v: 1
   };
 
-  const key = `u:${user.sub}:backup`;
-  await env.SYNC_KV.put(key, JSON.stringify(record));
+  // Store versioned record and update pointers/index.
+  await env.SYNC_KV.put(`u:${user.sub}:backup:${id}`, JSON.stringify(record));
+  await env.SYNC_KV.put(`u:${user.sub}:latest`, String(id));
 
-  return jsonResponse({ ok: true, updatedAt: record.updatedAt }, { headers: corsHeaders(request, env) });
+  const indexKey = `u:${user.sub}:backups`;
+  const index = (await env.SYNC_KV.get(indexKey, 'json')) || [];
+  const nextIndex = Array.isArray(index) ? index : [];
+  nextIndex.unshift({ id, updatedAt: record.updatedAt });
+  while (nextIndex.length > maxBackups) nextIndex.pop();
+  await env.SYNC_KV.put(indexKey, JSON.stringify(nextIndex));
+
+  // Backward-compatible key (latest snapshot).
+  await env.SYNC_KV.put(`u:${user.sub}:backup`, JSON.stringify(record));
+
+  return jsonResponse({ ok: true, id, updatedAt: record.updatedAt }, { headers: corsHeaders(request, env) });
 }
 
 
@@ -372,9 +434,32 @@ export default {
       return handleBackupPost(request, env);
     }
 
-    return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
+    
+    if (url.pathname === '/api/backup/meta' && request.method === 'GET') {
+      return handleBackupMetaGet(request, env);
+    }
+
+    if (url.pathname === '/api/backups' && request.method === 'GET') {
+      return handleBackupsList(request, env, url);
+    }
+
+    if (url.pathname.startsWith('/api/backups/') && request.method === 'GET') {
+      const backupId = url.pathname.slice('/api/backups/'.length);
+      return handleBackupById(request, env, backupId);
+    }
+
+    if (url.pathname === '/api/me' && request.method === 'GET') {
+      return handleMe(request, env);
+    }
+return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
   }
 };
+
+
+
+
+
+
 
 
 

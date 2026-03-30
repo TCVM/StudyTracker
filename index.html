@@ -16,19 +16,28 @@
     <div id="mobileNavOverlay" class="mobile-nav-overlay" hidden></div>
     <div class="app-container">
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo-row">
-                    <div class="logo">
-                        <span class="logo-icon">📚</span>
-                        <span class="logo-text">Study Tracker</span>
-                    </div>
-                    <button id="themeToggleBtn" class="icon-btn" type="button" title="Alternar modo nocturno">🌙</button>
-                </div>
-                <button class="btn-add-subject" id="addSubjectBtn">
-                    <span class="btn-icon">+</span>
-                    <span class="btn-text">Nueva Materia</span>
-                </button>
-            </div>
+             <div class="sidebar-header">
+                 <div class="logo-row">
+                     <div class="logo">
+                         <span class="logo-icon">📚</span>
+                         <span class="logo-text">Study Tracker</span>
+                     </div>
+                     <span id="sidebarSyncBadge" class="sync-badge" hidden></span>
+                     <button id="themeToggleBtn" class="icon-btn" type="button" title="Alternar modo nocturno">🌙</button>
+                 </div>
+
+                 <div class="sync-account-row" id="sidebarSyncAccountRow">
+                     <div class="sync-account" id="sidebarSyncAccount" role="button" tabindex="0" title="Abrir ajustes de sincronización">
+                         <img id="sidebarSyncAvatar" class="sync-avatar" alt="" hidden>
+                         <span id="sidebarSyncAccountText" class="sync-account-text">Sync: no conectado</span>
+                     </div>
+                     <button class="btn btn-small btn-secondary" id="sidebarSyncConnectBtn" type="button">Conectar</button>
+                 </div>
+                 <button class="btn-add-subject" id="addSubjectBtn">
+                     <span class="btn-icon">+</span>
+                     <span class="btn-text">Nueva Materia</span>
+                 </button>
+             </div>
             
             <nav class="subject-nav">
                 <div class="nav-section">
@@ -59,6 +68,13 @@
         </aside>
 
         <main class="main-content">
+            <div class="top-sync-bar" id="topSyncBar">
+                <div class="sync-account" id="topSyncAccount" role="button" tabindex="0" title="Abrir ajustes de sincronización">
+                    <img id="topSyncAvatar" class="sync-avatar" alt="" hidden>
+                    <span id="topSyncAccountText" class="sync-account-text">Sync: no conectado</span>
+                </div>
+                <button class="btn btn-small btn-secondary" id="topSyncConnectBtn" type="button">Conectar</button>
+            </div>
             <!-- Página de Inicio (Global) -->
             <section class="view view-active" id="homeView">
                 <div class="home-container">
@@ -243,6 +259,32 @@
                             <div class="actions-grid">
                                 <button class="btn btn-secondary" id="settingsSyncHistoryRefreshBtn" type="button">Actualizar</button>
                                 <button class="btn btn-secondary" id="settingsSyncHistoryRestoreBtn" type="button">Restaurar</button>
+                            </div>
+                        </div>
+
+                        <div class="panel" style="margin-top: 14px;">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Estado</h3>
+                                <div class="panel-subtitle">Avisos y actualización automática</div>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input id="settingsCloudAutoPullOnOpen" type="checkbox">
+                                    Actualizar automáticamente al abrir (si no hay cambios locales)
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input id="settingsCloudNotifyRemoteChange" type="checkbox">
+                                    Avisar si hay un backup más nuevo en la nube
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="settingsCloudPollSec">Chequear cada (seg)</label>
+                                <input id="settingsCloudPollSec" class="form-control" type="number" min="15" max="600" step="5" value="45">
+                            </div>
+                            <div class="actions-grid">
+                                <button class="btn btn-secondary" id="settingsCloudCheckNowBtn" type="button">Chequear ahora</button>
                             </div>
                         </div>
 

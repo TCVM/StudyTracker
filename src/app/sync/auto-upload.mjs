@@ -78,7 +78,13 @@ async function doUpload({ reason }) {
 
   try {
     const mod = await import('./cloud-sync.mjs');
-    await mod.cloudUploadEncryptedBackup({ passphrase });
+    const res = await mod.cloudUploadEncryptedBackup({ passphrase });
+    try {
+      const watch = await import('./cloud-watch.mjs');
+      if (res?.id) watch.markAppliedRemoteId?.(res.id);
+    } catch {
+      // ignore
+    }
     dirtySinceMs = 0;
     if (reason === 'interval') {
       // keep silent
@@ -120,4 +126,3 @@ export function ensurePeriodicTimer() {
 }
 
 ensurePeriodicTimer();
-

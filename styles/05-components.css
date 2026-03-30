@@ -228,6 +228,129 @@ body.dark-mode .exam-date-preview {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+.sync-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    border: 1px solid rgba(45, 55, 72, 0.12);
+    background: rgba(45, 55, 72, 0.06);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+}
+
+.sync-badge:focus-visible {
+    outline: 2px solid rgba(102, 126, 234, 0.6);
+    outline-offset: 2px;
+}
+
+.sync-account-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.sync-account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 6px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(45, 55, 72, 0.12);
+    background: rgba(45, 55, 72, 0.04);
+    cursor: pointer;
+    user-select: none;
+    flex: 1;
+}
+
+.sync-account:focus-visible {
+    outline: 2px solid rgba(102, 126, 234, 0.6);
+    outline-offset: 2px;
+}
+
+.sync-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+    object-fit: cover;
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.sync-account-text {
+    font-weight: 800;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.dark-mode .sync-account {
+    background: rgba(74, 85, 104, 0.35);
+    border-color: rgba(102, 126, 234, 0.25);
+}
+
+body.dark-mode .sync-avatar {
+    border-color: rgba(15, 23, 42, 0.8);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.top-sync-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    background: var(--color-panel);
+    background: color-mix(in srgb, var(--color-panel) 86%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(45, 55, 72, 0.08);
+}
+
+body.dark-mode .top-sync-bar {
+    border-bottom-color: rgba(102, 126, 234, 0.18);
+}
+
+.sync-badge.sync-ok {
+    background: rgba(72, 187, 120, 0.14);
+    border-color: rgba(72, 187, 120, 0.24);
+    color: #1f2937;
+}
+
+.sync-badge.sync-outdated {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.28);
+    color: #1f2937;
+}
+
+body.dark-mode .sync-badge {
+    background: rgba(74, 85, 104, 0.45);
+    border-color: rgba(102, 126, 234, 0.25);
+    color: #e2e8f0;
+}
+
+body.dark-mode .sync-badge.sync-ok {
+    background: rgba(72, 187, 120, 0.18);
+    border-color: rgba(72, 187, 120, 0.3);
+    color: #e2e8f0;
+}
+
+body.dark-mode .sync-badge.sync-outdated {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.32);
+    color: #e2e8f0;
+}
+
 .btn:active { transform: translateY(0); }
 
 .btn-small {

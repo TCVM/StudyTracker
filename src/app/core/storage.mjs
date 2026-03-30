@@ -225,6 +225,13 @@ export function saveData(force = false) {
     const state = getAppState();
     if (!state || typeof state !== 'object' || !Array.isArray(state.subjects)) return;
     localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
+    try {
+      if (!globalThis.__studyTrackerApplyingRemote) {
+        localStorage.setItem('study-tracker:sync:cloud:dirty-since-ms', String(now));
+      }
+    } catch {
+      // ignore
+    }
 
     // Optional: auto-sync (cloud) on save, if enabled.
     import('../sync/auto-upload.mjs')
@@ -323,7 +330,7 @@ export async function importBackupText(text) {
   const parsed = safeJsonParse(String(text ?? '').trim());
   if (!parsed) {
     showNotification('No se pudo importar: JSON inválido.');
-    return;
+    return false;
   }
 
   const maybeState = parsed?.data ?? parsed?.appState ?? parsed;
@@ -337,7 +344,7 @@ export async function importBackupText(text) {
     fallbackText: '¿Importar backup? Esto reemplaza tu progreso actual.'
   });
 
-  if (!ok) return;
+  if (!ok) return false;
 
   setAppState(normalized);
   setCurrentSubject(null);
@@ -350,6 +357,7 @@ export async function importBackupText(text) {
   saveData(true);
   await renderAllSafe();
   showNotification('Backup importado.');
+  return true;
 }
 
 export async function resetData() {

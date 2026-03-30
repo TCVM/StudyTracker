@@ -2,6 +2,12 @@ import { buildBackupPayload, importBackupText } from '../core/storage.mjs';
 import { decryptStringWithPassphrase, encryptStringWithPassphrase } from './crypto.mjs';
 
 const CONFIG_KEY = 'study-tracker:sync:cloud:v1';
+const DIRTY_KEY = 'study-tracker:sync:cloud:dirty-since-ms';
+
+let applyingRemote = false;
+export function isApplyingRemote() {
+  return applyingRemote;
+}
 
 function safeJsonParse(text) {
   try {
@@ -62,6 +68,11 @@ export function clearCloudSyncSession() {
     sessionToken: ''
   }));
   try {
+    localStorage.removeItem(DIRTY_KEY);
+  } catch {
+    // ignore
+  }
+  try {
     document.dispatchEvent(new CustomEvent('cloud-sync-updated'));
   } catch {
     // ignore
@@ -101,6 +112,7 @@ export function getCloudSessionInfo() {
     return {
       userId: String(payload?.sub ?? ''),
       login: String(payload?.login ?? ''),
+      avatarUrl: String(payload?.avatarUrl ?? ''),
       exp: Number(payload?.exp ?? 0) || 0
     };
   } catch {
@@ -154,6 +166,11 @@ export async function cloudUploadEncryptedBackup({ passphrase }) {
     sessionToken: token,
     body: { encryptedText }
   });
+  try {
+    localStorage.removeItem(DIRTY_KEY);
+  } catch {
+    // ignore
+  }
   return json;
 }
 
@@ -178,8 +195,23 @@ export async function cloudDownloadEncryptedBackup({ passphrase }) {
   if (!encryptedText) throw new Error('Backup inválido.');
 
   const plainText = await decryptStringWithPassphrase(encryptedText, passphrase);
-  await importBackupText(plainText);
-  return json;
+  applyingRemote = true;
+  globalThis.__studyTrackerApplyingRemote = true;
+  let imported = false;
+  try {
+    imported = !!(await importBackupText(plainText));
+  } finally {
+    applyingRemote = false;
+    globalThis.__studyTrackerApplyingRemote = false;
+  }
+  if (imported) {
+    try {
+      localStorage.removeItem(DIRTY_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  return { ...json, imported };
 }
 
 export async function cloudListBackups({ limit = 10 } = {}) {
@@ -214,6 +246,21 @@ export async function cloudDownloadBackupById({ id, passphrase }) {
   const encryptedText = String(json?.encryptedText ?? '').trim();
   if (!encryptedText) throw new Error('Backup inválido.');
   const plainText = await decryptStringWithPassphrase(encryptedText, passphrase);
-  await importBackupText(plainText);
-  return json;
+  applyingRemote = true;
+  globalThis.__studyTrackerApplyingRemote = true;
+  let imported = false;
+  try {
+    imported = !!(await importBackupText(plainText));
+  } finally {
+    applyingRemote = false;
+    globalThis.__studyTrackerApplyingRemote = false;
+  }
+  if (imported) {
+    try {
+      localStorage.removeItem(DIRTY_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  return { ...json, imported };
 }
