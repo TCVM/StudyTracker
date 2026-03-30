@@ -26,6 +26,8 @@ function ensureSyncModal() {
           <button class="btn btn-secondary" id="syncModalSetupBtn" type="button">Conectar</button>
           <button class="btn btn-primary" id="syncModalUploadBtn" type="button">Subir (crear/actualizar)</button>
           <button class="btn btn-secondary" id="syncModalDownloadBtn" type="button">Bajar backup</button>
+          <button class="btn btn-secondary" id="syncModalHistoryBtn" type="button">Historial</button>
+          <button class="btn btn-secondary" id="syncModalLogoutBtn" type="button">Cerrar sesión</button>
         </div>
       </div>
     </div>
@@ -44,8 +46,10 @@ export function showSyncModal(options = null) {
   const setupBtn = byId('syncModalSetupBtn');
   const uploadBtn = byId('syncModalUploadBtn');
   const downloadBtn = byId('syncModalDownloadBtn');
+  const historyBtn = byId('syncModalHistoryBtn');
+  const logoutBtn = byId('syncModalLogoutBtn');
 
-  if (!modal || !closeBtn || !setupBtn || !uploadBtn || !downloadBtn) {
+  if (!modal || !closeBtn || !setupBtn || !uploadBtn || !downloadBtn || !historyBtn || !logoutBtn) {
     return Promise.resolve(null);
   }
 
@@ -74,6 +78,8 @@ export function showSyncModal(options = null) {
       setupBtn.removeEventListener('click', onSetup);
       uploadBtn.removeEventListener('click', onUpload);
       downloadBtn.removeEventListener('click', onDownload);
+      historyBtn.removeEventListener('click', onHistory);
+      logoutBtn.removeEventListener('click', onLogout);
       closeBtn.removeEventListener('click', onClose);
       modal.removeEventListener('click', onBackdrop);
       document.removeEventListener('keydown', onKeydown);
@@ -87,6 +93,8 @@ export function showSyncModal(options = null) {
     const onSetup = () => cleanup('setup');
     const onUpload = () => cleanup('upload');
     const onDownload = () => cleanup('download');
+    const onHistory = () => cleanup('history');
+    const onLogout = () => cleanup('logout');
     const onClose = () => cleanup(null);
     const onBackdrop = (e) => {
       if (e.target === modal) cleanup(null);
@@ -98,6 +106,8 @@ export function showSyncModal(options = null) {
     setupBtn.addEventListener('click', onSetup);
     uploadBtn.addEventListener('click', onUpload);
     downloadBtn.addEventListener('click', onDownload);
+    historyBtn.addEventListener('click', onHistory);
+    logoutBtn.addEventListener('click', onLogout);
     closeBtn.addEventListener('click', onClose);
     modal.addEventListener('click', onBackdrop);
     document.addEventListener('keydown', onKeydown);

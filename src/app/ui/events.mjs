@@ -55,9 +55,13 @@ import {
 import { createDraftCategory } from '../features/subject/drafts.mjs';
 import {
   buildCloudAuthStartUrl,
+  clearCloudSyncSession,
+  cloudDownloadBackupById,
   cloudDownloadEncryptedBackup,
+  cloudListBackups,
   cloudUploadEncryptedBackup,
   getCloudSyncConfig,
+  getCloudSessionInfo,
   setCloudSyncConfig
 } from '../sync/cloud-sync.mjs';
 
@@ -156,6 +160,45 @@ async function ensureCloudSyncAuthorized() {
   showNotification('Redirigiendo a GitHub…');
   window.location.assign(loginUrl);
   return null;
+}
+
+async function chooseBackupIdFromHistory({ limit = 10 } = {}) {
+  let list;
+  try {
+    list = await cloudListBackups({ limit });
+  } catch (e) {
+    showNotification(String(e?.message ?? e ?? 'No se pudo obtener el historial.'));
+    return null;
+  }
+
+  const items = Array.isArray(list?.items) ? list.items : [];
+  if (items.length === 0) {
+    showNotification('No hay backups en el historial todavía.');
+    return null;
+  }
+
+  const lines = items.map((it, idx) => {
+    const when = String(it?.updatedAt ?? '');
+    const id = String(it?.id ?? '');
+    return `${idx + 1}) ${when} (${id})`;
+  });
+
+  const res = await showPromptModal({
+    title: 'Historial de Backups',
+    label: `Elegí un número (1-${items.length})`,
+    placeholder: '1',
+    defaultValue: '1',
+    hint: lines.join('\n')
+  });
+
+  if (res == null) return null;
+  const n = parseInt(String(res).trim(), 10);
+  if (!Number.isFinite(n) || n < 1 || n > items.length) {
+    showNotification('Selección inválida.');
+    return null;
+  }
+
+  return String(items[n - 1]?.id ?? '').trim() || null;
 }
 
 async function promptPassphrase() {
@@ -871,12 +914,20 @@ export function setupEventListeners() {
   if (quickGitHubSync) {
     quickGitHubSync.addEventListener('click', async () => {
       const cfg = getCloudSyncConfig();
-      const status = `Servidor: ${cfg.baseUrl ? 'OK' : 'Falta'} | GitHub: ${cfg.sessionToken ? 'Conectado' : 'No conectado'}`;
+      const who = getCloudSessionInfo();
+      const whoText = who?.login ? `@${who.login}` : '';
+      const status = `Servidor: ${cfg.baseUrl ? 'OK' : 'Falta'} | Cuenta: ${cfg.sessionToken ? `Conectado ${whoText}` : 'No conectado'}`;
       const action = await showSyncModal({ status });
       if (!action) return;
 
       if (action === 'setup') {
         await ensureCloudSyncAuthorized();
+        return;
+      }
+
+      if (action === 'logout') {
+        clearCloudSyncSession();
+        showNotification('Sesión cerrada. Podés conectar otra cuenta.');
         return;
       }
 
@@ -926,6 +977,33 @@ export function setupEventListeners() {
           showNotification(`Backup descargado (${res?.updatedAt ?? 'ok'}).`);
         } catch (e) {
           showNotification(String(e?.message ?? e ?? 'Error al bajar.'));
+        }
+      }
+
+      if (action === 'history') {
+        const configured = await ensureCloudSyncAuthorized();
+        if (!configured) return;
+
+        const backupId = await chooseBackupIdFromHistory({ limit: 10 });
+        if (!backupId) return;
+
+        const passphrase = await promptPassphrase();
+        if (!passphrase) return;
+
+        const ok = await showConfirmModalV2({
+          title: 'Restaurar backup (historial)',
+          text: 'Esto descarga y descifra el backup elegido y luego te pedirá confirmación para importar (reemplaza tu progreso actual).',
+          confirmText: 'Restaurar',
+          cancelText: 'Cancelar',
+          fallbackText: '¿Restaurar backup?'
+        });
+        if (!ok) return;
+
+        try {
+          const res = await cloudDownloadBackupById({ id: backupId, passphrase });
+          showNotification(`Backup restaurado (${res?.updatedAt ?? 'ok'}).`);
+        } catch (e) {
+          showNotification(String(e?.message ?? e ?? 'Error al restaurar.'));
         }
       }
     });

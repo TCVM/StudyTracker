@@ -11,6 +11,16 @@ function safeJsonParse(text) {
   }
 }
 
+function getDefaultBaseUrlFromMeta() {
+  try {
+    const meta = document.querySelector('meta[name="studytracker-sync-base-url"]');
+    const content = String(meta?.getAttribute?.('content') ?? '').trim();
+    return content;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeBaseUrl(input) {
   const raw = String(input ?? '').trim();
   if (!raw) return '';
@@ -22,7 +32,7 @@ export function getCloudSyncConfig() {
   const raw = localStorage.getItem(CONFIG_KEY);
   const parsed = raw ? safeJsonParse(raw) : null;
   if (!parsed || typeof parsed !== 'object') {
-    return { baseUrl: '', sessionToken: '' };
+    return { baseUrl: normalizeBaseUrl(getDefaultBaseUrlFromMeta()), sessionToken: '' };
   }
   return {
     baseUrl: typeof parsed.baseUrl === 'string' ? normalizeBaseUrl(parsed.baseUrl) : '',
@@ -56,6 +66,31 @@ export function claimCloudSyncTokenFromUrl() {
   u.searchParams.delete('sync_token');
   window.history.replaceState({}, '', u.toString());
   return true;
+}
+
+function base64UrlToString(b64url) {
+  const s = String(b64url || '').replaceAll('-', '+').replaceAll('_', '/');
+  const padded = s + '==='.slice((s.length + 3) % 4);
+  return atob(padded);
+}
+
+export function getCloudSessionInfo() {
+  const cfg = getCloudSyncConfig();
+  const token = String(cfg.sessionToken ?? '').trim();
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payloadJson = base64UrlToString(parts[1]);
+    const payload = JSON.parse(payloadJson);
+    return {
+      userId: String(payload?.sub ?? ''),
+      login: String(payload?.login ?? ''),
+      exp: Number(payload?.exp ?? 0) || 0
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function buildCloudAuthStartUrl({ baseUrl, redirectUrl }) {
@@ -127,6 +162,42 @@ export async function cloudDownloadEncryptedBackup({ passphrase }) {
   const encryptedText = String(json?.encryptedText ?? '').trim();
   if (!encryptedText) throw new Error('Backup inválido.');
 
+  const plainText = await decryptStringWithPassphrase(encryptedText, passphrase);
+  await importBackupText(plainText);
+  return json;
+}
+
+export async function cloudListBackups({ limit = 10 } = {}) {
+  const cfg = getCloudSyncConfig();
+  const token = String(cfg.sessionToken ?? '').trim();
+  if (!token) throw new Error('No conectado. Usá “Conectar” primero.');
+  const lim = Math.max(1, Math.min(25, Number(limit) || 10));
+  return apiJson({
+    baseUrl: cfg.baseUrl,
+    path: `/api/backups?limit=${encodeURIComponent(String(lim))}`,
+    method: 'GET',
+    sessionToken: token,
+    body: null
+  });
+}
+
+export async function cloudDownloadBackupById({ id, passphrase }) {
+  const cfg = getCloudSyncConfig();
+  const token = String(cfg.sessionToken ?? '').trim();
+  if (!token) throw new Error('No conectado. Usá “Conectar” primero.');
+  const backupId = String(id ?? '').trim();
+  if (!backupId) throw new Error('Falta el id del backup.');
+
+  const json = await apiJson({
+    baseUrl: cfg.baseUrl,
+    path: `/api/backups/${encodeURIComponent(backupId)}`,
+    method: 'GET',
+    sessionToken: token,
+    body: null
+  });
+
+  const encryptedText = String(json?.encryptedText ?? '').trim();
+  if (!encryptedText) throw new Error('Backup inválido.');
   const plainText = await decryptStringWithPassphrase(encryptedText, passphrase);
   await importBackupText(plainText);
   return json;

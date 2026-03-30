@@ -303,6 +303,37 @@ async function handleBackupPost(request, env) {
   return jsonResponse({ ok: true, updatedAt: record.updatedAt }, { headers: corsHeaders(request, env) });
 }
 
+
+async function handleBackupsList(request, env, url) {
+  const user = await requireUser(request, env);
+  if (!user?.sub) return unauthorized('No autorizado.', request, env);
+
+  const lim = Math.max(1, Math.min(25, parseInt(url.searchParams.get('limit') || '10', 10) || 10));
+  const indexKey = `u:${user.sub}:backups`;
+  const index = (await env.SYNC_KV.get(indexKey, 'json')) || [];
+  const items = Array.isArray(index) ? index.slice(0, lim) : [];
+  return jsonResponse({ ok: true, items }, { headers: corsHeaders(request, env) });
+}
+
+async function handleBackupById(request, env, backupId) {
+  const user = await requireUser(request, env);
+  if (!user?.sub) return unauthorized('No autorizado.', request, env);
+
+  const id = String(backupId || '').trim();
+  if (!id) return badRequest('Falta id.', request, env);
+
+  const raw = await env.SYNC_KV.get(`u:${user.sub}:backup:${id}`, 'json');
+  if (!raw) return badRequest('Backup no encontrado.', request, env);
+
+  return jsonResponse({ ok: true, id, ...raw }, { headers: corsHeaders(request, env) });
+}
+
+async function handleMe(request, env) {
+  const user = await requireUser(request, env);
+  if (!user?.sub) return unauthorized('No autorizado.', request, env);
+  return jsonResponse({ ok: true, user: { id: String(user.sub), login: String(user.login || '') } }, { headers: corsHeaders(request, env) });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -330,3 +361,4 @@ export default {
     return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
   }
 };
+

@@ -27,9 +27,12 @@ App web (sin backend) para llevar materias, temas, timer, prácticas y exámenes
 
 - Requiere un backend liviano (gratis): Cloudflare Worker + KV.
 - En Home → `Sincronizar (GitHub)`.
-- `Conectar`: te pide la URL del servidor (tu Worker) y te redirige a GitHub para iniciar sesión. Al volver, queda conectado en ese dispositivo.
-- `Subir`: sube tu backup cifrado al backend (1 backup por usuario).
-- `Bajar`: baja el backup cifrado del backend y luego lo importa (reemplaza tu progreso actual).
+- Config: seteá el backend en `index.html` con `<meta name="studytracker-sync-base-url" content="https://TU_WORKER.workers.dev">`.
+- `Conectar`: te redirige a GitHub para iniciar sesión. Al volver, queda conectado en ese dispositivo.
+- `Subir`: sube tu backup cifrado al backend (se guarda historial).
+- `Bajar`: baja el último backup cifrado del backend y luego lo importa (reemplaza tu progreso actual).
+- `Historial`: lista los últimos backups (N=10) y te permite restaurar uno.
+- `Cerrar sesión`: desconecta la cuenta para conectar otra.
 - Nota: por ahora no sincroniza adjuntos/imágenes guardados en IndexedDB.
 
 ### Backend (Cloudflare Worker)
