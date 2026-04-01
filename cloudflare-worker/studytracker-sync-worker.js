@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * StudyTracker Sync Backend (Cloudflare Worker)
  *
  * Features:
@@ -244,13 +244,13 @@ async function handleAuthCallback(request, env, url) {
   if (!code || !state) return badRequest('Falta code/state.', request, env);
 
   const parsedState = parseGitHubState(state);
-  if (!parsedState?.redirectUrl) return badRequest('State invÃ¡lido.', request, env);
+  if (!parsedState?.redirectUrl) return badRequest('State inválido.', request, env);
 
   let accessToken;
   try {
     accessToken = await exchangeCodeForToken({ code, env });
   } catch (e) {
-    return badRequest(String(e?.message || 'OAuth exchange fallÃ³.'), request, env);
+    return badRequest(String(e?.message || 'OAuth exchange falló.'), request, env);
   }
 
   let user;
@@ -346,7 +346,7 @@ async function handleBackupPost(request, env) {
   try {
     body = await request.json();
   } catch {
-    return badRequest('JSON invÃ¡lido.', request, env);
+    return badRequest('JSON inválido.', request, env);
   }
 
   const encryptedText = String(body?.encryptedText ?? '').trim();
@@ -451,7 +451,13 @@ export default {
     if (url.pathname === '/api/me' && request.method === 'GET') {
       return handleMe(request, env);
     }
-return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
+    if (url.pathname === '/api/shared-subjects' && request.method === 'GET') {
+      return handleSharedSubjectsList(request, env, url);
+    }
+    if (url.pathname === '/api/shared-subjects' && request.method === 'POST') {
+      return handleSharedSubjectsPost(request, env);
+    }
+    return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: corsHeaders(request, env) });
   }
 };
 
@@ -463,3 +469,44 @@ return jsonResponse({ ok: false, error: 'Not Found' }, { status: 404, headers: c
 
 
 
+
+
+function normalizeSharedSubjectPayload(input) {
+  if (!input || typeof input !== 'object') return null;
+  return input;
+}
+
+async function handleSharedSubjectsList(request, env, url) {
+  const lim = Math.max(1, Math.min(24, parseInt(url.searchParams.get('limit') || '12', 10) || 12));
+  const index = (await env.SYNC_KV.get('shared:index', 'json')) || [];
+  const items = Array.isArray(index) ? index.slice(0, lim) : [];
+  const records = [];
+  for (const item of items) {
+    const id = String(item?.id ?? '').trim();
+    if (!id) continue;
+    const record = await env.SYNC_KV.get(`shared:subject:${id}`, 'json');
+    if (record?.payload) records.push({ id, payload: record.payload, owner: record.owner, createdAt: String(record.createdAt ?? ''), updatedAt: String(record.updatedAt ?? '') });
+  }
+  return jsonResponse({ ok: true, items: records }, { headers: corsHeaders(request, env) });
+}
+
+async function handleSharedSubjectsPost(request, env) {
+  const user = await requireUser(request, env);
+  if (!user?.sub) return unauthorized('No autorizado.', request, env);
+  let body;
+  try { body = await request.json(); } catch { return badRequest('JSON invalido.', request, env); }
+  const payload = normalizeSharedSubjectPayload(body?.payload);
+  if (!payload) return badRequest('Payload invalido.', request, env);
+  const text = JSON.stringify(payload);
+  if (text.length > 900000) return badRequest('La materia compartida es demasiado grande.', request, env);
+  const nowIso = new Date().toISOString();
+  const id = `${Date.now().toString(36)}-${randomHex(6)}`;
+  const record = { id, payload, owner: { id: String(user.sub), login: String(user.login || ''), avatarUrl: String(user.avatarUrl || '') }, createdAt: nowIso, updatedAt: nowIso };
+  await env.SYNC_KV.put(`shared:subject:${id}`, JSON.stringify(record));
+  const index = (await env.SYNC_KV.get('shared:index', 'json')) || [];
+  const nextIndex = Array.isArray(index) ? index : [];
+  nextIndex.unshift({ id, owner: record.owner, createdAt: record.createdAt, updatedAt: record.updatedAt });
+  while (nextIndex.length > 100) nextIndex.pop();
+  await env.SYNC_KV.put('shared:index', JSON.stringify(nextIndex));
+  return jsonResponse({ ok: true, id, updatedAt: record.updatedAt }, { headers: corsHeaders(request, env) });
+}

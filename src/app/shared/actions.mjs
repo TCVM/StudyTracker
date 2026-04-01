@@ -7,27 +7,56 @@ import { setActiveView } from '../ui/flow.mjs';
 import { renderSharedSubjects } from './ui.mjs';
 import { downloadJson, safeFilename } from '../core/storage.mjs';
 import { loadLocalSharedSubjects, normalizeBannerUrl, refreshSharedSubjectsMerged, saveLocalSharedSubjects } from './core.mjs';
+import { getImage } from '../core/idb.mjs';
+import { getCloudSessionInfo, getCloudSyncConfig } from '../sync/cloud-sync.mjs';
+import { publishCloudSharedSubject } from './cloud.mjs';
 
-export function buildSharedSubjectPayload(subject, options = null) {
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(reader.error ?? new Error('No se pudo leer la imagen.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function exportTopicImages(note) {
+  const ids = Array.isArray(note?.images) ? note.images.map(String).filter(Boolean) : [];
+  const images = [];
+
+  for (const id of ids) {
+    try {
+      const blob = await getImage(id);
+      if (!blob) continue;
+      const dataUrl = await blobToDataUrl(blob);
+      if (!dataUrl) continue;
+      images.push({
+        id,
+        type: String(blob.type ?? ''),
+        dataUrl
+      });
+    } catch {
+      // ignore individual image failures
+    }
+  }
+
+  return images;
+}
+
+export async function buildSharedSubjectPayload(subject, options = null) {
   if (!subject) return null;
 
   const categories = Array.isArray(subject.categories) ? subject.categories : [];
+  const includeNotes = !!options?.includeNotes;
+  const includeTopicNotes = !!options?.includeTopicNotes;
   const payload = {
     name: String(subject.name ?? '').trim() || 'Materia',
     icon: String(subject.icon ?? '').trim() || '📚',
     color: String(subject.color ?? '').trim() || '#667eea',
     bannerUrl: normalizeBannerUrl(subject.bannerUrl),
-    categories: categories.map((c) => ({
-      name: String(c?.name ?? '').trim() || 'Tema',
-      icon: String(c?.icon ?? '').trim() || '📍',
-      topics: (Array.isArray(c?.topics) ? c.topics : []).map((t) => ({
-        name: String(t?.name ?? '').trim(),
-        level: Math.max(1, Math.min(20, Number(t?.level) || 1))
-      })).filter((t) => t.name)
-    })),
+    categories: [],
     customAchievements: (Array.isArray(subject?.meta?.customAchievements) ? subject.meta.customAchievements : [])
       .filter((a) => a && typeof a === 'object')
-      // Nota: category_complete requiere mapear IDs de categoría; por ahora lo omitimos en plantillas compartidas.
       .filter((a) => String(a.type ?? '') !== 'category_complete')
       .map((a) => ({
         title: String(a.title ?? '').trim(),
@@ -38,7 +67,37 @@ export function buildSharedSubjectPayload(subject, options = null) {
       .filter((a) => a.title)
   };
 
-  const includeNotes = !!options?.includeNotes;
+  for (const category of categories) {
+    const exportedCategory = {
+      name: String(category?.name ?? '').trim() || 'Tema',
+      icon: String(category?.icon ?? '').trim() || '📍',
+      topics: []
+    };
+
+    const topics = Array.isArray(category?.topics) ? category.topics : [];
+    for (const topic of topics) {
+      const name = String(topic?.name ?? '').trim();
+      if (!name) continue;
+
+      const exportedTopic = {
+        name,
+        level: Math.max(1, Math.min(20, Number(topic?.level) || 1))
+      };
+
+      if (includeTopicNotes && topic?.note && typeof topic.note === 'object') {
+        const text = String(topic.note.text ?? '');
+        const images = await exportTopicImages(topic.note);
+        if (text || images.length) {
+          exportedTopic.note = { text, images };
+        }
+      }
+
+      exportedCategory.topics.push(exportedTopic);
+    }
+
+    payload.categories.push(exportedCategory);
+  }
+
   if (includeNotes) {
     ensureSubjectNotes(subject);
     payload.notes = {
@@ -63,6 +122,26 @@ export function buildSharedSubjectPayload(subject, options = null) {
   return payload;
 }
 
+async function askSharedContentOptions() {
+  const includeNotes = await showConfirmModalV2({
+    title: 'Notas y links',
+    text: 'Quieres incluir las notas y links utiles? Puede contener informacion personal.',
+    confirmText: 'Incluir',
+    cancelText: 'No incluir',
+    fallbackText: 'Incluir notas y links?'
+  });
+
+  const includeTopicNotes = await showConfirmModalV2({
+    title: 'Notas de temas y fotos',
+    text: 'Quieres incluir notas de temas y sus imagenes? Esto puede hacer el archivo mas pesado.',
+    confirmText: 'Incluir',
+    cancelText: 'No incluir',
+    fallbackText: 'Incluir notas de temas y fotos?'
+  });
+
+  return { includeNotes, includeTopicNotes };
+}
+
 export async function exportCurrentSubjectTemplate() {
   const subject = getCurrentSubject();
   if (!subject) {
@@ -72,31 +151,22 @@ export async function exportCurrentSubjectTemplate() {
 
   const ok = await showConfirmModalV2({
     title: 'Exportar materia',
-    text: `Esto exporta una plantilla de "${subject.name}". Podés pegarla en shared-subjects.json para que aparezca en "Compartidas".`,
+    text: `Esto exporta una plantilla de "${subject.name}". Puedes pegarla en shared-subjects.json para que aparezca en "Compartidas".`,
     confirmText: 'Exportar',
     cancelText: 'Cancelar',
-    fallbackText: `¿Exportar "${subject.name}"?`
+    fallbackText: `Exportar "${subject.name}"?`
   });
   if (!ok) return;
 
-  const includeNotes = await showConfirmModalV2({
-    title: 'Notas y links',
-    text: '¿Querés incluir las notas y links útiles en la exportación? (Puede contener info personal)',
-    confirmText: 'Incluir',
-    cancelText: 'No incluir',
-    fallbackText: '¿Incluir notas y links?'
-  });
-
-  const payload = buildSharedSubjectPayload(subject, { includeNotes });
+  const payload = await buildSharedSubjectPayload(subject, await askSharedContentOptions());
   if (!payload) {
     showNotification('No se pudo preparar la materia.');
     return;
   }
 
   const pretty = JSON.stringify(payload, null, 2);
-
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(pretty);
       showNotification('Copiado al portapapeles.');
     }
@@ -115,36 +185,7 @@ function setSharedViewActive() {
   });
 }
 
-export async function shareCurrentSubjectToShared() {
-  const subject = getCurrentSubject();
-  if (!subject) {
-    showNotification('Selecciona una materia primero');
-    return;
-  }
-
-  const ok = await showConfirmModalV2({
-    title: 'Compartir materia',
-    text: `Agregar "${subject.name}" a "Compartidas" en este dispositivo?`,
-    confirmText: 'Agregar',
-    cancelText: 'Cancelar',
-    fallbackText: `Agregar "${subject.name}" a compartidas?`
-  });
-  if (!ok) return;
-
-  const includeNotes = await showConfirmModalV2({
-    title: 'Notas y links',
-    text: '¿Querés incluir las notas y links útiles al compartir? (Puede contener info personal)',
-    confirmText: 'Incluir',
-    cancelText: 'No incluir',
-    fallbackText: '¿Incluir notas y links?'
-  });
-
-  const payload = buildSharedSubjectPayload(subject, { includeNotes });
-  if (!payload) {
-    showNotification('No se pudo preparar la materia.');
-    return;
-  }
-
+function shareLocally(payload) {
   const sig = (() => {
     try {
       return JSON.stringify(payload);
@@ -172,8 +213,58 @@ export async function shareCurrentSubjectToShared() {
     renderSharedSubjects();
     showNotification('Materia agregada a compartidas.');
   } else {
-    showNotification('Esa materia ya está en compartidas.');
+    showNotification('Esa materia ya esta en compartidas.');
+  }
+}
+
+export async function shareCurrentSubjectToShared() {
+  const subject = getCurrentSubject();
+  if (!subject) {
+    showNotification('Selecciona una materia primero');
+    return;
   }
 
+  const ok = await showConfirmModalV2({
+    title: 'Compartir materia',
+    text: `Quieres compartir "${subject.name}"?`,
+    confirmText: 'Continuar',
+    cancelText: 'Cancelar',
+    fallbackText: `Compartir "${subject.name}"?`
+  });
+  if (!ok) return;
+
+  const payload = await buildSharedSubjectPayload(subject, await askSharedContentOptions());
+  if (!payload) {
+    showNotification('No se pudo preparar la materia.');
+    return;
+  }
+
+  const session = getCloudSessionInfo();
+  if (session) {
+    const publishOnline = await showConfirmModalV2({
+      title: 'Compartir online',
+      text: 'Estas conectado. Quieres publicarla para que otros usuarios la vean en Compartidas?',
+      confirmText: 'Publicar online',
+      cancelText: 'Solo local',
+      fallbackText: 'Publicar online?'
+    });
+
+    if (publishOnline) {
+      try {
+        const cfg = getCloudSyncConfig();
+        await publishCloudSharedSubject({ payload, sessionToken: cfg?.sessionToken });
+        showNotification('Materia publicada en Compartidas.');
+        setSharedViewActive();
+        const { loadSharedSubjects } = await import('./core.mjs');
+        await loadSharedSubjects();
+        return;
+      } catch (e) {
+        showNotification(String(e?.message ?? e ?? 'No se pudo publicar la materia.'));
+        return;
+      }
+    }
+  }
+
+  shareLocally(payload);
   setSharedViewActive();
 }

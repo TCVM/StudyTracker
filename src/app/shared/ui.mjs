@@ -6,6 +6,7 @@ import { escapeHtml, showNotification, formatDurationMs } from '../../utils/help
 import { ensureSubjectNotes } from '../features/notes/notes-skilltree-stats.mjs';
 import { addSubjectDraftId } from '../features/subject/drafts.mjs';
 import { createSubject, saveData } from '../core/storage.mjs';
+import { putImage } from '../core/idb.mjs';
 
 function byId(id) {
   return document.getElementById(id);
@@ -90,7 +91,6 @@ export function renderExamCountdown() {
     return `${prefix} en ${formatDurationMs(remaining)}`;
   };
 
-  // Próximo (resumen) en el panel de Exámenes
   if (countdownEl) {
     if (!next) {
       countdownEl.innerHTML = '';
@@ -98,8 +98,8 @@ export function renderExamCountdown() {
     } else {
       const remaining = next.at - now;
       const urgency = getUrgency(remaining);
-      const title = next.title ? `${next.title} — ` : '';
-      const text = `Próximo — ${title}${countdownText(next.at)}`;
+      const title = next.title ? `${next.title} - ` : '';
+      const text = `Proximo - ${title}${countdownText(next.at)}`;
       const when = `(${formatDateTimeShort(next.at)})`;
 
       countdownEl.dataset.urgency = urgency;
@@ -119,7 +119,6 @@ export function renderExamCountdown() {
     }
   }
 
-  // Próximo (pill) en el área principal de la materia
   if (pillEl) {
     if (!next) {
       pillEl.hidden = true;
@@ -127,18 +126,17 @@ export function renderExamCountdown() {
       pillEl.dataset.urgency = '';
     } else {
       pillEl.hidden = false;
-      const title = next.title ? `${next.title} — ` : '';
-      pillEl.textContent = `Próximo — ${title}${countdownText(next.at)} (${formatDateTimeShort(next.at)})`;
+      const title = next.title ? `${next.title} - ` : '';
+      pillEl.textContent = `Proximo - ${title}${countdownText(next.at)} (${formatDateTimeShort(next.at)})`;
       pillEl.dataset.urgency = getUrgency(next.at - now);
     }
   }
 
-  // Lista de próximos exámenes (todos)
   if (listEl) {
     listEl.innerHTML = '';
 
     if (!upcoming.length) {
-      listEl.innerHTML = `<div class="upcoming-exam-item"><div class="upcoming-exam-left"><div class="upcoming-exam-title">Sin próximos exámenes</div><div class="upcoming-exam-meta">Agregá uno con “📅 Próximo”.</div></div></div>`;
+      listEl.innerHTML = '<div class="upcoming-exam-item"><div class="upcoming-exam-left"><div class="upcoming-exam-title">Sin proximos examenes</div><div class="upcoming-exam-meta">Agrega uno con "Proximo".</div></div></div>';
       return;
     }
 
@@ -153,11 +151,7 @@ export function renderExamCountdown() {
 
       const titleEl = document.createElement('div');
       titleEl.className = 'upcoming-exam-title';
-      if (options?.isNext) {
-        titleEl.textContent = x.title ? `Próximo — ${x.title}` : 'Próximo — Examen';
-      } else {
-        titleEl.textContent = x.title || 'Examen';
-      }
+      titleEl.textContent = options?.isNext ? (x.title ? `Proximo - ${x.title}` : 'Proximo - Examen') : (x.title || 'Examen');
 
       const metaEl = document.createElement('div');
       metaEl.className = 'upcoming-exam-meta';
@@ -190,13 +184,10 @@ export function renderExamCountdown() {
 
       row.appendChild(left);
       row.appendChild(actions);
-
       return row;
     };
 
-    if (next) {
-      listEl.appendChild(makeRow(next, { isNext: true }));
-    }
+    if (next) listEl.appendChild(makeRow(next, { isNext: true }));
 
     const rest = upcoming.filter((x) => !next || x.id !== next.id);
     if (!rest.length) return;
@@ -213,22 +204,22 @@ export function renderExamCountdown() {
 }
 
 export function showExamDateModal(examId = null) {
-  const modal = byId("examDateModal");
+  const modal = byId('examDateModal');
   if (!modal) return;
   const subject = getCurrentSubject();
   if (!subject) return;
 
-  const titleEl = byId("examDateModalTitle");
-  const titleInput = byId("examTitleInput");
-  const dateTimeInput = byId("examDateTimeInput");
+  const titleEl = byId('examDateModalTitle');
+  const titleInput = byId('examTitleInput');
+  const dateTimeInput = byId('examDateTimeInput');
 
   const toLocalInputValue = (ts) => {
     const d = new Date(ts);
     const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
   };
 
@@ -236,65 +227,68 @@ export function showExamDateModal(examId = null) {
   const selected = examId ? upcoming.find((x) => String(x?.id) === String(examId)) : null;
 
   modal.dataset.examId = selected ? String(selected.id) : '';
-  if (titleEl) titleEl.textContent = selected ? 'Editar próximo examen' : 'Agregar próximo examen';
+  if (titleEl) titleEl.textContent = selected ? 'Editar proximo examen' : 'Agregar proximo examen';
   if (titleInput) titleInput.value = selected ? String(selected.title ?? '') : '';
-  if (dateTimeInput) dateTimeInput.value = selected?.at ? toLocalInputValue(Number(selected.at)) : "";
+  if (dateTimeInput) dateTimeInput.value = selected?.at ? toLocalInputValue(Number(selected.at)) : '';
 
   updateExamDatePreview();
-  modal.classList.add("active");
+  modal.classList.add('active');
 }
+
 export function hideExamDateModal() {
-  const modal = byId("examDateModal");
-  modal?.classList.remove("active");
+  const modal = byId('examDateModal');
+  modal?.classList.remove('active');
   if (modal) modal.dataset.examId = '';
 }
+
 export function updateExamDatePreview() {
-  const preview = byId("examDatePreview");
-  const titleInput = byId("examTitleInput");
-  const dateTimeInput = byId("examDateTimeInput");
+  const preview = byId('examDatePreview');
+  const titleInput = byId('examTitleInput');
+  const dateTimeInput = byId('examDateTimeInput');
   if (!preview) return;
 
-  const raw = String(dateTimeInput?.value ?? "").trim();
+  const raw = String(dateTimeInput?.value ?? '').trim();
   if (!raw) {
-    preview.innerHTML = "";
+    preview.innerHTML = '';
     return;
   }
 
   const parseLocal = (value) => {
-    const parts = value.split("T");
+    const parts = value.split('T');
     if (parts.length !== 2) return null;
-    const [y, m, d] = parts[0].split("-").map((n) => Number(n));
-    const [hh, mm] = parts[1].split(":").map((n) => Number(n));
+    const [y, m, d] = parts[0].split('-').map((n) => Number(n));
+    const [hh, mm] = parts[1].split(':').map((n) => Number(n));
     if (![y, m, d, hh, mm].every((n) => Number.isFinite(n))) return null;
     return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
   };
 
   const dateObj = parseLocal(raw);
   if (!dateObj || Number.isNaN(dateObj.getTime())) {
-    preview.innerHTML = "";
+    preview.innerHTML = '';
     return;
   }
 
-  const formatted = dateObj.toLocaleString("es-AR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
+  const formatted = dateObj.toLocaleString('es-AR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 
   const title = String(titleInput?.value ?? '').trim();
   preview.innerHTML = '<strong>Resumen:</strong> ';
-  preview.append(document.createTextNode(`${title ? `${title} — ` : ''}${formatted}`));
+  preview.append(document.createTextNode(`${title ? `${title} - ` : ''}${formatted}`));
 }
+
 export function renderSharedSubjects() {
   const sharedSubjectsGrid = byId('sharedSubjectsGrid');
   const sharedSubjectsEmpty = byId('sharedSubjectsEmpty');
   if (!sharedSubjectsGrid) return;
 
   if (!getSharedSubjectsLoaded()) {
-    sharedSubjectsGrid.innerHTML = '<div class="shared-empty">Cargando materias compartidas…</div>';
+    sharedSubjectsGrid.innerHTML = '<div class="shared-empty">Cargando materias compartidas...</div>';
     if (sharedSubjectsEmpty) sharedSubjectsEmpty.hidden = true;
     return;
   }
@@ -326,6 +320,8 @@ export function renderSharedSubjects() {
     const name = String(s?.name ?? '').trim() || 'Materia';
     const icon = String(s?.icon ?? '').trim() || '📚';
     const size = estimateSharedSubjectSize(s) ?? { categories: 0, topics: 0 };
+    const metaInfo = s?.__sharedMeta && typeof s.__sharedMeta === 'object' ? s.__sharedMeta : null;
+    const author = String(metaInfo?.ownerLogin ?? '').trim();
 
     const banner = document.createElement('div');
     banner.className = 'shared-subject-banner';
@@ -344,11 +340,12 @@ export function renderSharedSubjects() {
     meta.innerHTML = `
             <div class="shared-subject-name">${escapeHtml(icon) ?? icon} ${escapeHtml(name) ?? name}</div>
             <div class="shared-subject-chip">${size.categories} temas · ${size.topics} items</div>
+            ${author ? `<div class="shared-subject-chip">por @${escapeHtml(author)}</div>` : ''}
         `;
     card.appendChild(meta);
 
     card.addEventListener('click', () => {
-      importSharedSubjectIntoApp(s);
+      void importSharedSubjectIntoApp(s);
     });
 
     sharedSubjectsGrid.appendChild(card);
@@ -387,7 +384,16 @@ function newSubjectId() {
   return id;
 }
 
-function buildSubjectFromSharedPayload(payload) {
+async function dataUrlToBlob(dataUrl, fallbackType = '') {
+  const raw = String(dataUrl ?? '').trim();
+  if (!raw.startsWith('data:')) return null;
+  const res = await fetch(raw);
+  const blob = await res.blob();
+  if (!fallbackType || blob.type) return blob;
+  return new Blob([await blob.arrayBuffer()], { type: fallbackType });
+}
+
+async function buildSubjectFromSharedPayload(payload) {
   const name = String(payload?.name ?? '').trim() || 'Materia';
   const icon = String(payload?.icon ?? '').trim() || '📚';
   const color = String(payload?.color ?? '').trim() || '#667eea';
@@ -459,6 +465,39 @@ function buildSubjectFromSharedPayload(payload) {
   }
   ensureSubjectNotes(subject);
 
+  for (let catIndex = 0; catIndex < subject.categories.length; catIndex += 1) {
+    const sourceCategory = categories[catIndex];
+    const sourceTopics = Array.isArray(sourceCategory?.topics) ? sourceCategory.topics : [];
+    const targetTopics = Array.isArray(subject.categories[catIndex]?.topics) ? subject.categories[catIndex].topics : [];
+
+    for (let topicIndex = 0; topicIndex < Math.min(sourceTopics.length, targetTopics.length); topicIndex += 1) {
+      const sourceTopic = sourceTopics[topicIndex];
+      const targetTopic = targetTopics[topicIndex];
+      if (!sourceTopic?.note || typeof sourceTopic.note !== 'object') continue;
+
+      const text = String(sourceTopic.note.text ?? '');
+      const images = Array.isArray(sourceTopic.note.images) ? sourceTopic.note.images : [];
+      const nextImageIds = [];
+
+      for (let imgIndex = 0; imgIndex < images.length; imgIndex += 1) {
+        const image = images[imgIndex];
+        const blob = await dataUrlToBlob(image?.dataUrl, String(image?.type ?? ''));
+        if (!blob) continue;
+        const imgId = `simg_${Date.now()}_${catIndex}_${topicIndex}_${imgIndex}`;
+        try {
+          await putImage(imgId, blob, { type: blob.type, createdAt: Date.now() });
+          nextImageIds.push(imgId);
+        } catch {
+          // ignore individual image failures
+        }
+      }
+
+      if (text || nextImageIds.length) {
+        targetTopic.note = { text, images: nextImageIds };
+      }
+    }
+  }
+
   return subject;
 }
 
@@ -467,15 +506,15 @@ export async function importSharedSubjectIntoApp(payload) {
 
   const ok = await showConfirmModalV2({
     title: 'Agregar materia',
-    text: `¿Querés agregar "${name}" a tus materias?`,
+    text: `Quieres agregar "${name}" a tus materias?`,
     confirmText: 'Agregar',
     cancelText: 'Cancelar',
-    fallbackText: `¿Agregar "${name}"?`
+    fallbackText: `Agregar "${name}"?`
   });
   if (!ok) return;
 
   try {
-    const subject = buildSubjectFromSharedPayload(payload);
+    const subject = await buildSubjectFromSharedPayload(payload);
     getAppState()?.subjects?.push?.(subject);
     saveData(true);
     await renderAllAndSelectSubject(subject.id);
